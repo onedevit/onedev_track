@@ -87,8 +87,10 @@ class AppLocalizations {
       'approval_pending_banner': 'الرجاء مراجعة خطة المشروع والمهام أدناه والتأكيد للبدء مباشرة.',
       'rejection_reason_label': 'اذكر سبب الرفض أو التعديلات المطلوبة بكل دقة',
       'confirm_rejection': 'تأكيد وإرسال للإدارة',
+      'decision_date': 'تاريخ وساعة القرار',
       'task_completed': 'مكتملة',
       'task_in_progress': 'قيد العمل',
+      'completed_at_label': 'تاريخ ووقت الإنجاز',
       'no_active_projects': 'لم يتم العثور على مشاريع نشطة مخصصة لك حالياً.',
 
       // Admin Dashboard
@@ -205,6 +207,7 @@ class AppLocalizations {
       'approval_pending_banner': 'Please review the project plan and tasks below to confirm and start.',
       'rejection_reason_label': 'Please specify the reason for rejection or required changes',
       'confirm_rejection': 'Confirm & Send to Admin',
+      'decision_date': 'Decision Date & Time',
       'task_completed': 'Completed',
       'task_in_progress': 'In Progress',
       'no_active_projects': 'No active projects assigned to you currently.',
@@ -323,6 +326,7 @@ class AppLocalizations {
       'approval_pending_banner': 'Veuillez examiner le plan et les tâches ci-dessous pour confirmer et démarrer.',
       'rejection_reason_label': 'Veuillez préciser la raison du refus ou les modifications requises',
       'confirm_rejection': 'Confirmer & Envoyer à l\'Admin',
+      'decision_date': 'Date et Heure de Décision',
       'task_completed': 'Terminée',
       'task_in_progress': 'En Cours',
       'no_active_projects': 'Aucun projet actif ne vous est attribué actuellement.',

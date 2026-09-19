@@ -23,7 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $check_stmt->execute();
 
         if($check_stmt->rowCount() > 0) {
-            $query = "UPDATE projects SET client_approval_status = :status, client_rejection_reason = :reason WHERE id = :id";
+            $query = "UPDATE projects SET client_approval_status = :status, client_rejection_reason = :reason, client_approval_date = NOW() WHERE id = :id";
             $stmt = $db->prepare($query);
             $stmt->bindParam(':status', $status);
             $stmt->bindParam(':reason', $reason);

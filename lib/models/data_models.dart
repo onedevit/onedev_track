@@ -48,6 +48,7 @@ class Project {
   final int completedTasks;
   final String approvalStatus; // حالة الموافقة
   final String? rejectionReason; // سبب الرفض
+  final DateTime? clientApprovalDate; // تاريخ ووقت رد الحريف (الموافقة أو الرفض)
   final List<Task> tasks; // هذه القائمة ستحتوي فقط على "المهام الرئيسية" وجذور الشجرة
 
   Project({
@@ -63,6 +64,7 @@ class Project {
     this.completedTasks = 0,
     this.approvalStatus = 'pending',
     this.rejectionReason,
+    this.clientApprovalDate,
     this.tasks = const [],
   });
 
@@ -78,10 +80,8 @@ class Project {
 
     for (var task in allTasks) {
       if (task.parentId == null) {
-        // هذه مهمة رئيسية (Root)
         rootTasks.add(task);
       } else {
-        // هذه مهمة فرعية، نضيفها لقائمة subTasks الخاصة بأبيها
         if (taskMap.containsKey(task.parentId)) {
           taskMap[task.parentId]!.subTasks.add(task);
         }
@@ -101,7 +101,8 @@ class Project {
       completedTasks: json['completed_tasks'] != null ? int.parse(json['completed_tasks'].toString()) : 0,
       approvalStatus: json['client_approval_status'] ?? 'pending',
       rejectionReason: json['client_rejection_reason'],
-      tasks: rootTasks, // نمرر الجذور فقط للواجهة
+      clientApprovalDate: json['client_approval_date'] != null ? DateTime.parse(json['client_approval_date']) : null,
+      tasks: rootTasks,
     );
   }
   
@@ -111,13 +112,13 @@ class Project {
 
 class Task {
   final int id;
-  final int? parentId; // معرف الأب (إن وُجد)
+  final int? parentId;
   final String title;
   final String description;
   final String status;
   final String notes;
   final DateTime? completedAt;
-  final List<Task> subTasks; // المهام الفرعية التابعة لهذه المهمة
+  final List<Task> subTasks;
 
   Task({
     required this.id,

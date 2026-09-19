@@ -147,7 +147,7 @@ class _ClientDashboardState extends State<ClientDashboard> {
         // زر تبديل الثيم
         ValueListenableBuilder<ThemeMode>(
           valueListenable: themeNotifier,
-          builder: (_, mode, __) {
+          builder: (_, mode, _) {
             return IconButton(
               icon: Icon(mode == ThemeMode.light ? Icons.dark_mode_outlined : Icons.light_mode_outlined, 
                   color: isDark ? Colors.amber : const Color(0xFF1E293B)),
@@ -348,6 +348,10 @@ class _ClientDashboardState extends State<ClientDashboard> {
 
   // 2. قسم طلب الموافقة / الرفض
   Widget _buildApprovalBanner(Project project, bool isDark, bool isMobile) {
+    final String? formattedApprovalDate = project.clientApprovalDate != null 
+        ? DateFormat('yyyy-MM-dd HH:mm').format(project.clientApprovalDate!) 
+        : null;
+
     if (project.approvalStatus == 'approved') {
       return Container(
         width: double.infinity,
@@ -357,16 +361,34 @@ class _ClientDashboardState extends State<ClientDashboard> {
           borderRadius: BorderRadius.circular(16), 
           border: Border.all(color: isDark ? const Color(0xFF10B981).withValues(alpha: 0.3) : const Color(0xFFA7F3D0))
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 28),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                AppLocalizations.tr('approval_approved_banner'), 
-                style: TextStyle(color: isDark ? const Color(0xFF34D399) : const Color(0xFF065F46), fontWeight: FontWeight.bold, fontSize: 14)
-              ),
+            Row(
+              children: [
+                const Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 28),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    AppLocalizations.tr('approval_approved_banner'), 
+                    style: TextStyle(color: isDark ? const Color(0xFF34D399) : const Color(0xFF065F46), fontWeight: FontWeight.bold, fontSize: 14)
+                  ),
+                ),
+              ],
             ),
+            if (formattedApprovalDate != null) ...[
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  const Icon(Icons.access_time_rounded, size: 14, color: Color(0xFF10B981)),
+                  const SizedBox(width: 6),
+                  Text(
+                    '${AppLocalizations.tr('decision_date')}: $formattedApprovalDate',
+                    style: TextStyle(color: isDark ? const Color(0xFF34D399) : const Color(0xFF065F46), fontSize: 12, fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
+            ]
           ],
         ),
       );
@@ -393,6 +415,19 @@ class _ClientDashboardState extends State<ClientDashboard> {
                 ),
               ],
             ),
+            if (formattedApprovalDate != null) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  const Icon(Icons.access_time_rounded, size: 14, color: Color(0xFFEF4444)),
+                  const SizedBox(width: 6),
+                  Text(
+                    '${AppLocalizations.tr('decision_date')}: $formattedApprovalDate',
+                    style: TextStyle(color: isDark ? const Color(0xFFFCA5A5) : const Color(0xFF991B1B), fontSize: 12, fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
+            ],
             if (project.rejectionReason != null && project.rejectionReason!.isNotEmpty) ...[
               const SizedBox(height: 12),
               Container(

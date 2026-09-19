@@ -138,7 +138,7 @@ class _AdminTaskManagerScreenState extends State<AdminTaskManagerScreen> {
         const SizedBox(width: 8),
         ValueListenableBuilder<ThemeMode>(
           valueListenable: themeNotifier,
-          builder: (_, mode, __) {
+          builder: (_, mode, _) {
             return IconButton(
               icon: Icon(mode == ThemeMode.light ? Icons.dark_mode_outlined : Icons.light_mode_outlined, 
                   color: isDark ? Colors.amber : const Color(0xFF1E293B)),

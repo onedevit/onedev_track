@@ -149,7 +149,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         // زر تبديل الثيم
         ValueListenableBuilder<ThemeMode>(
           valueListenable: themeNotifier,
-          builder: (_, mode, __) {
+          builder: (_, mode, _) {
             return IconButton(
               icon: Icon(mode == ThemeMode.light ? Icons.dark_mode_outlined : Icons.light_mode_outlined, 
                   color: isDark ? Colors.amber : const Color(0xFF1E293B)),
@@ -449,6 +449,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
                             Icon(Icons.calendar_today_rounded, size: 14, color: isDark ? Colors.grey.shade400 : Colors.grey.shade600),
                             const SizedBox(width: 6),
                             Text('${AppLocalizations.tr('deadline')}: ${DateFormat('MMM dd, yyyy').format(p.deadline)}', style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey.shade600, fontSize: 12)),
+                            if (p.clientApprovalDate != null) ...[
+                              const SizedBox(width: 16),
+                              Icon(Icons.access_time_rounded, size: 14, color: isDark ? Colors.blue.shade300 : Colors.blue.shade700),
+                              const SizedBox(width: 6),
+                              Text('${AppLocalizations.tr('decision_date')}: ${DateFormat('yyyy-MM-dd HH:mm').format(p.clientApprovalDate!)}', 
+                                style: TextStyle(color: isDark ? Colors.blue.shade300 : Colors.blue.shade700, fontSize: 12, fontWeight: FontWeight.bold)
+                              ),
+                            ],
                           ],
                         ),
                       ],

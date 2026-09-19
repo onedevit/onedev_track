@@ -64,7 +64,7 @@ class _FreelancePortalAppState extends State<FreelancePortalApp> {
       builder: (_, ThemeMode currentMode, _) {
         return ValueListenableBuilder<Locale>(
           valueListenable: localeNotifier,
-          builder: (_, Locale currentLocale, __) {
+          builder: (_, Locale currentLocale, _) {
             final bool isRtl = currentLocale.languageCode == 'ar';
 
             return MaterialApp(
@@ -82,7 +82,8 @@ class _FreelancePortalAppState extends State<FreelancePortalApp> {
                 brightness: Brightness.light,
                 colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1E293B), brightness: Brightness.light),
                 useMaterial3: true,
-                fontFamily: 'Segoe UI',
+                fontFamily: 'Cairo',
+                fontFamilyFallback: const ['Segoe UI', 'Tahoma', 'Arial', 'sans-serif'],
                 scaffoldBackgroundColor: const Color(0xFFF8FAFC),
                 appBarTheme: const AppBarTheme(
                   backgroundColor: Colors.white,
@@ -96,7 +97,8 @@ class _FreelancePortalAppState extends State<FreelancePortalApp> {
                 brightness: Brightness.dark,
                 colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF3B82F6), brightness: Brightness.dark),
                 useMaterial3: true,
-                fontFamily: 'Segoe UI',
+                fontFamily: 'Cairo',
+                fontFamilyFallback: const ['Segoe UI', 'Tahoma', 'Arial', 'sans-serif'],
                 scaffoldBackgroundColor: const Color(0xFF0F172A),
                 appBarTheme: const AppBarTheme(
                   backgroundColor: Color(0xFF1E293B),
