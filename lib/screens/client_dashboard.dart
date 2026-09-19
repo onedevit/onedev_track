@@ -3,7 +3,6 @@ import 'package:intl/intl.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 // ignore: avoid_web_libraries_in_flutter
 import 'dart:html' as html;
-import 'dart:ui_web' as ui_web;
 
 import '../models/data_models.dart';
 import '../services/api_service.dart';
@@ -51,7 +50,6 @@ class _ClientDashboardState extends State<ClientDashboard> {
 
   @override
   Widget build(BuildContext context) {
-    // الاستماع المباشر لتغيير اللغة لإعادة بناء الشاشة فوراً وترجمة الكلمات
     return ValueListenableBuilder<Locale>(
       valueListenable: localeNotifier,
       builder: (context, locale, _) {
@@ -96,7 +94,6 @@ class _ClientDashboardState extends State<ClientDashboard> {
       ),
       elevation: 0,
       actions: [
-        // اختيار المشروع في حال وجود أكثر من مشروع للعميل
         if (_projects.length > 1) ...[
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -127,11 +124,9 @@ class _ClientDashboardState extends State<ClientDashboard> {
           const SizedBox(width: 8),
         ],
 
-        // محول اللغة
         buildLanguageSelector(isDark),
         const SizedBox(width: 8),
 
-        // زر تغيير كلمة المرور
         IconButton(
           icon: const Icon(Icons.lock_reset_rounded, color: Colors.blue),
           tooltip: AppLocalizations.tr('change_password'),
@@ -144,10 +139,9 @@ class _ClientDashboardState extends State<ClientDashboard> {
         ),
         const SizedBox(width: 4),
 
-        // زر تبديل الثيم
         ValueListenableBuilder<ThemeMode>(
           valueListenable: themeNotifier,
-          builder: (_, mode, _) {
+          builder: (_, mode, __) {
             return IconButton(
               icon: Icon(mode == ThemeMode.light ? Icons.dark_mode_outlined : Icons.light_mode_outlined, 
                   color: isDark ? Colors.amber : const Color(0xFF1E293B)),
@@ -160,7 +154,6 @@ class _ClientDashboardState extends State<ClientDashboard> {
         ),
         const SizedBox(width: 4),
 
-        // زر تسجيل الخروج
         IconButton(
           icon: const Icon(Icons.logout_rounded, color: Colors.redAccent), 
           tooltip: AppLocalizations.tr('logout'),
@@ -204,7 +197,7 @@ class _ClientDashboardState extends State<ClientDashboard> {
               _buildTaskTimelineSection(project, isDark, isMobile),
               const SizedBox(height: 40),
               
-              // 5. معاينة تفاصيل المشروع
+              // 5. تفاصيل ومعاينة المشروع الناتيف (Native Flutter Rendering)
               _buildProjectPreviewSection(project, isDark, isMobile),
             ],
           ),
@@ -579,7 +572,6 @@ class _ClientDashboardState extends State<ClientDashboard> {
     }
   }
 
-  // بطاقة إحصائية مفردة
   Widget _buildStatCard({
     required String title,
     required String value,
@@ -684,7 +676,6 @@ class _ClientDashboardState extends State<ClientDashboard> {
     );
   }
 
-  // شجرة المهام الهرمية
   Widget _buildClientTaskTree(List<Task> tasks, bool isDark, {int level = 0}) {
     if (tasks.isEmpty) return const SizedBox.shrink();
 
@@ -886,46 +877,9 @@ class _ClientDashboardState extends State<ClientDashboard> {
     );
   }
 
-  // 5. معاينة تفاصيل المشروع
+  // 5. عرض ناتيف وفخم لمواصفات وتفاصيل المشروع بدون أي IFrames إطلاقاً
   Widget _buildProjectPreviewSection(Project project, bool isDark, bool isMobile) {
     if (project.description.trim().isEmpty) return const SizedBox.shrink();
-
-    final String viewId = 'iframe-${project.id}';
-    
-    // إدراج تنسيقات CSS لضبط ملء الـ Iframe بنسبة 100% وإزالة الفراغات الجانبية الزائدة
-    final String responsiveCss = '''
-      <style>
-        html, body {
-          width: 100% !important;
-          max-width: 100% !important;
-          margin: 0 !important;
-          padding: 10px !important;
-          box-sizing: border-box !important;
-          overflow-x: hidden !important;
-        }
-        .wrapper, container, main {
-          max-width: 100% !important;
-          width: 100% !important;
-          margin: 0 !important;
-          box-shadow: none !important;
-        }
-      </style>
-    ''';
-
-    final String fullHtmlContent = responsiveCss + project.description;
-
-    if (kIsWeb) {
-      ui_web.platformViewRegistry.registerViewFactory(viewId, (int viewId) {
-        final html.IFrameElement iframe = html.IFrameElement()
-          ..width = '100%'
-          ..height = '100%'
-          ..style.border = 'none'
-          ..style.margin = '0'
-          ..style.padding = '0'
-          ..srcdoc = fullHtmlContent; 
-        return iframe;
-      });
-    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -947,73 +901,92 @@ class _ClientDashboardState extends State<ClientDashboard> {
           ],
         ),
         const SizedBox(height: 20),
+
+        // بطاقة ملخص الموافقة والمواصفات مع خيار الفتح بملء الشاشة
         Container(
-          height: isMobile ? 450 : 650, 
           width: double.infinity,
+          padding: EdgeInsets.all(isMobile ? 20 : 32),
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF0F172A) : Colors.white,
+            color: isDark ? const Color(0xFF1E293B) : Colors.white,
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1), width: 1.5),
+            border: Border.all(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.08), 
-                blurRadius: 30, 
-                offset: const Offset(0, 12)
+                color: Colors.purple.withValues(alpha: isDark ? 0.15 : 0.05),
+                blurRadius: 25,
+                offset: const Offset(0, 10),
               )
             ],
           ),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // إطار المتصفح بنمط Mac OS مع تثبيت الاتجاه من اليسار لليمين LTR للأزرار الثلاثية
-              Directionality(
-                textDirection: TextDirection.ltr,
-                child: Container(
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
-                    border: Border(bottom: BorderSide(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0))),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.purple.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.purple.withValues(alpha: 0.3)),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.verified_user_rounded, color: Colors.purple, size: 16),
+                        SizedBox(width: 8),
+                        Text('وثيقة التقرير والمواصفات الفنية المعتمدة', style: TextStyle(color: Colors.purple, fontWeight: FontWeight.bold, fontSize: 12)),
+                      ],
+                    ),
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
-                    children: [
-                      // أزرار ماك الثلاثية (أحمر، أصفر، أخضر) على اليسار دائماً
-                      Row(
-                        children: [
-                          CircleAvatar(radius: 6, backgroundColor: Colors.red.shade400),
-                          const SizedBox(width: 8),
-                          CircleAvatar(radius: 6, backgroundColor: Colors.amber.shade400),
-                          const SizedBox(width: 8),
-                          CircleAvatar(radius: 6, backgroundColor: Colors.green.shade400),
-                        ],
-                      ),
-                      const Spacer(),
-                      // شريط العنوان المضيء في المنتصف
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF0F172A) : Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: isDark ? Colors.grey.shade700 : Colors.grey.shade300)
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.lock_rounded, size: 12, color: isDark ? Colors.green.shade400 : Colors.green),
-                            const SizedBox(width: 6),
-                            Text('secure-preview.local', style: TextStyle(fontSize: 12, color: isDark ? Colors.grey.shade400 : Colors.grey.shade700)),
-                          ],
-                        ),
-                      ),
-                      const Spacer(),
-                      const SizedBox(width: 52), // موازنة المسافة
-                    ],
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.lock_rounded, size: 12, color: Colors.green),
+                        SizedBox(width: 6),
+                        Text('secure-preview.local', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                      ],
+                    ),
                   ),
-                ),
+                ],
               ),
-              Expanded(
-                child: ClipRRect(
-                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(22)),
-                  child: HtmlElementView(viewType: viewId),
+              const SizedBox(height: 20),
+
+              Text(
+                project.title,
+                style: TextStyle(fontSize: isMobile ? 20 : 26, fontWeight: FontWeight.bold, color: isDark ? Colors.white : const Color(0xFF0F172A)),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'يمكنك استعراض تفاصيل العرض والتقرير التفاعلي والمواصفات المعتمدة كاملة بملء الشاشة أو قراءتها مباشرة.',
+                style: TextStyle(fontSize: 14, color: isDark ? Colors.grey.shade400 : Colors.grey.shade600, height: 1.5),
+              ),
+              const SizedBox(height: 24),
+
+              // عرض ناتيف نظيف لأجسام النص البرمجي
+              _buildNativeHtmlViewer(project.description, isDark, isMobile),
+
+              const SizedBox(height: 24),
+
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => _openFullscreenPreview(project),
+                  icon: const Icon(Icons.open_in_new_rounded),
+                  label: const Text('فتح التقرير والتفاصيل الكاملة في نافذة جديدة'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2563EB),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 18),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    elevation: 2,
+                  ),
                 ),
               ),
             ],
@@ -1022,6 +995,149 @@ class _ClientDashboardState extends State<ClientDashboard> {
         const SizedBox(height: 40),
       ],
     );
+  }
+
+  // بناء عرض ناتيف فخم وأنيق للنصوص والفقرات والبطاقات المضمنة بدون أي IFrames إطلاقاً
+  Widget _buildNativeHtmlViewer(String rawHtml, bool isDark, bool isMobile) {
+    if (rawHtml.trim().isEmpty) return const SizedBox.shrink();
+
+    // تنظيف وجمع الفقرات والعناوين بنمط ناتيف فخم
+    String cleanText = rawHtml
+        .replaceAll(RegExp(r'<script[\s\S]*?<\/script>'), '')
+        .replaceAll(RegExp(r'<style[\s\S]*?<\/style>'), '');
+
+    List<Widget> parsedWidgets = [];
+    final blockRegex = RegExp(r'<(h[1-6]|p|li|td)[^>]*>([\s\S]*?)<\/\1>', caseSensitive: false);
+    final matches = blockRegex.allMatches(cleanText);
+
+    if (matches.isNotEmpty) {
+      for (final match in matches) {
+        final tag = match.group(1)?.toLowerCase() ?? '';
+        final content = match.group(2) ?? '';
+        final fullTag = match.group(0) ?? '';
+
+        final textContent = content.replaceAll(RegExp(r'<[^>]*>'), '').trim();
+        if (textContent.isEmpty || textContent.length < 3) continue;
+
+        if (tag.startsWith('h')) {
+          parsedWidgets.add(
+            Padding(
+              padding: const EdgeInsets.only(top: 18, bottom: 8),
+              child: Row(
+                children: [
+                  Container(
+                    width: 4, 
+                    height: 18, 
+                    decoration: BoxDecoration(
+                      color: Colors.blue,
+                      borderRadius: BorderRadius.circular(2)
+                    ),
+                    margin: const EdgeInsets.only(left: 8, right: 8)
+                  ),
+                  Expanded(
+                    child: Text(
+                      textContent,
+                      style: TextStyle(
+                        fontSize: tag == 'h1' ? 20 : (tag == 'h2' ? 17 : 15),
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.white : const Color(0xFF0F172A),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        } else if (fullTag.contains('critical') || fullTag.contains('danger') || fullTag.contains('red') || textContent.contains('حرج') || textContent.contains('عاجل')) {
+          parsedWidgets.add(
+            Container(
+              margin: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: isDark ? Colors.red.withValues(alpha: 0.1) : const Color(0xFFFEF2F2),
+                borderRadius: BorderRadius.circular(12),
+                border: Border(right: BorderSide(color: Colors.red.shade400, width: 4)),
+              ),
+              child: Text(textContent, style: TextStyle(color: isDark ? const Color(0xFFFCA5A5) : const Color(0xFF991B1B), fontSize: 13, height: 1.5, fontWeight: FontWeight.w600)),
+            ),
+          );
+        } else if (fullTag.contains('warn') || fullTag.contains('orange') || textContent.contains('تنبيه') || textContent.contains('تحذير')) {
+          parsedWidgets.add(
+            Container(
+              margin: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: isDark ? Colors.amber.withValues(alpha: 0.1) : const Color(0xFFFFFBEB),
+                borderRadius: BorderRadius.circular(12),
+                border: Border(right: BorderSide(color: Colors.amber.shade700, width: 4)),
+              ),
+              child: Text(textContent, style: TextStyle(color: isDark ? const Color(0xFFFBBF24) : const Color(0xFF92400E), fontSize: 13, height: 1.5, fontWeight: FontWeight.w600)),
+            ),
+          );
+        } else {
+          parsedWidgets.add(
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                textContent,
+                style: TextStyle(
+                  fontSize: 13.5,
+                  height: 1.6,
+                  color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF334155),
+                ),
+              ),
+            ),
+          );
+        }
+      }
+    }
+
+    if (parsedWidgets.isEmpty) {
+      final plainText = cleanText.replaceAll(RegExp(r'<[^>]*>'), '\n').trim();
+      final lines = plainText.split('\n').where((l) => l.trim().length > 3).toList();
+
+      for (var line in lines) {
+        parsedWidgets.add(
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text(
+              line.trim(),
+              style: TextStyle(
+                fontSize: 13.5,
+                height: 1.6,
+                color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF334155),
+              ),
+            ),
+          ),
+        );
+      }
+    }
+
+    return Container(
+      width: double.infinity,
+      constraints: const BoxConstraints(maxHeight: 350),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: parsedWidgets,
+        ),
+      ),
+    );
+  }
+
+  // فتح العرض التفاعلي بملء الشاشة بتبويب جديد
+  void _openFullscreenPreview(Project project) {
+    if (kIsWeb) {
+      final blob = html.Blob([project.description], 'text/html');
+      final url = html.Url.createObjectUrlFromBlob(blob);
+      html.window.open(url, '_blank');
+    }
   }
 
   Widget _buildEmptyState(bool isDark) {
