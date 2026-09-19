@@ -88,6 +88,15 @@ class Project {
       }
     }
 
+    int total = json['total_tasks'] != null ? int.parse(json['total_tasks'].toString()) : 0;
+    int completed = json['completed_tasks'] != null ? int.parse(json['completed_tasks'].toString()) : 0;
+
+    // حساب تلقائي ديناميكي واحتياطي لضمان تطابق النسبة المئوية 100% بين لوحتي الأدمن والحريف
+    if (total == 0 && allTasks.isNotEmpty) {
+      total = allTasks.length;
+      completed = allTasks.where((t) => t.status == 'completed').length;
+    }
+
     return Project(
       id: int.parse(json['id'].toString()),
       clientId: json['client_id'] != null ? int.parse(json['client_id'].toString()) : 0,
@@ -97,8 +106,8 @@ class Project {
       startDate: DateTime.parse(json['start_date']),
       durationDays: int.parse(json['duration_days'].toString()),
       deadline: DateTime.parse(json['deadline']),
-      totalTasks: json['total_tasks'] != null ? int.parse(json['total_tasks'].toString()) : 0,
-      completedTasks: json['completed_tasks'] != null ? int.parse(json['completed_tasks'].toString()) : 0,
+      totalTasks: total,
+      completedTasks: completed,
       approvalStatus: json['client_approval_status'] ?? 'pending',
       rejectionReason: json['client_rejection_reason'],
       clientApprovalDate: json['client_approval_date'] != null ? DateTime.parse(json['client_approval_date']) : null,

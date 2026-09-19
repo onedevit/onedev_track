@@ -892,13 +892,37 @@ class _ClientDashboardState extends State<ClientDashboard> {
 
     final String viewId = 'iframe-${project.id}';
     
+    // إدراج تنسيقات CSS لضبط ملء الـ Iframe بنسبة 100% وإزالة الفراغات الجانبية الزائدة
+    final String responsiveCss = '''
+      <style>
+        html, body {
+          width: 100% !important;
+          max-width: 100% !important;
+          margin: 0 !important;
+          padding: 10px !important;
+          box-sizing: border-box !important;
+          overflow-x: hidden !important;
+        }
+        .wrapper, container, main {
+          max-width: 100% !important;
+          width: 100% !important;
+          margin: 0 !important;
+          box-shadow: none !important;
+        }
+      </style>
+    ''';
+
+    final String fullHtmlContent = responsiveCss + project.description;
+
     if (kIsWeb) {
       ui_web.platformViewRegistry.registerViewFactory(viewId, (int viewId) {
         final html.IFrameElement iframe = html.IFrameElement()
           ..width = '100%'
           ..height = '100%'
           ..style.border = 'none'
-          ..srcdoc = project.description; 
+          ..style.margin = '0'
+          ..style.padding = '0'
+          ..srcdoc = fullHtmlContent; 
         return iframe;
       });
     }
@@ -940,44 +964,50 @@ class _ClientDashboardState extends State<ClientDashboard> {
           ),
           child: Column(
             children: [
-              Container(
-                height: 48,
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
-                  border: Border(bottom: BorderSide(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0))),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    Row(
-                      children: [
-                        CircleAvatar(radius: 6, backgroundColor: Colors.red.shade400),
-                        const SizedBox(width: 8),
-                        CircleAvatar(radius: 6, backgroundColor: Colors.amber.shade400),
-                        const SizedBox(width: 8),
-                        CircleAvatar(radius: 6, backgroundColor: Colors.green.shade400),
-                      ],
-                    ),
-                    const Spacer(),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF0F172A) : Colors.white,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: isDark ? Colors.grey.shade700 : Colors.grey.shade300)
-                      ),
-                      child: Row(
+              // إطار المتصفح بنمط Mac OS مع تثبيت الاتجاه من اليسار لليمين LTR للأزرار الثلاثية
+              Directionality(
+                textDirection: TextDirection.ltr,
+                child: Container(
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
+                    border: Border(bottom: BorderSide(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0))),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    children: [
+                      // أزرار ماك الثلاثية (أحمر، أصفر، أخضر) على اليسار دائماً
+                      Row(
                         children: [
-                          Icon(Icons.lock_rounded, size: 12, color: isDark ? Colors.green.shade400 : Colors.green),
-                          const SizedBox(width: 6),
-                          Text('secure-preview.local', style: TextStyle(fontSize: 12, color: isDark ? Colors.grey.shade400 : Colors.grey.shade700)),
+                          CircleAvatar(radius: 6, backgroundColor: Colors.red.shade400),
+                          const SizedBox(width: 8),
+                          CircleAvatar(radius: 6, backgroundColor: Colors.amber.shade400),
+                          const SizedBox(width: 8),
+                          CircleAvatar(radius: 6, backgroundColor: Colors.green.shade400),
                         ],
                       ),
-                    ),
-                    const Spacer(),
-                    const SizedBox(width: 44), 
-                  ],
+                      const Spacer(),
+                      // شريط العنوان المضيء في المنتصف
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF0F172A) : Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: isDark ? Colors.grey.shade700 : Colors.grey.shade300)
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.lock_rounded, size: 12, color: isDark ? Colors.green.shade400 : Colors.green),
+                            const SizedBox(width: 6),
+                            Text('secure-preview.local', style: TextStyle(fontSize: 12, color: isDark ? Colors.grey.shade400 : Colors.grey.shade700)),
+                          ],
+                        ),
+                      ),
+                      const Spacer(),
+                      const SizedBox(width: 52), // موازنة المسافة
+                    ],
+                  ),
                 ),
               ),
               Expanded(

@@ -8,8 +8,13 @@ $db = $database->getConnection();
 $user = verifyToken($db, 'client');
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    // جلب كافة المشاريع المرتبطة بهذا العميل (حتى لو كانت متعددة)
-    $query = "SELECT * FROM projects WHERE client_id = :client_id ORDER BY created_at DESC";
+    // جلب كافة المشاريع المرتبطة بهذا العميل مع الإحصائيات الدقيقة للمهام
+    $query = "SELECT p.*,
+              (SELECT COUNT(*) FROM tasks WHERE project_id = p.id) as total_tasks,
+              (SELECT COUNT(*) FROM tasks WHERE project_id = p.id AND status = 'completed') as completed_tasks
+              FROM projects p
+              WHERE p.client_id = :client_id
+              ORDER BY p.created_at DESC";
     $stmt = $db->prepare($query);
     $stmt->bindParam(':client_id', $user['id']);
     $stmt->execute();
