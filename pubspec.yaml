@@ -1,0 +1,38 @@
+name: onedev_track
+description: "Un portail de suivi des projets freelance moderne et professionnel pour les clients."
+# La ligne suivante empêche la publication accidentelle du paquet sur pub.dev.
+publish_to: 'none'
+
+# Définit la version et le numéro de build pour votre application.
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.13.2
+
+# Les dépendances spécifient d'autres paquets dont votre projet a besoin.
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Icônes de style iOS
+  cupertino_icons: ^1.0.8
+  
+  # Requêtes HTTP pour communiquer avec l'API REST
+  http: ^1.2.0
+  
+  # Stockage local sécurisé pour le Token d'authentification
+  shared_preferences: ^2.3.2
+  
+  # Formatage des dates pour l'affichage des deadlines
+  intl: ^0.19.0
+
+# Dépendances de développement
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+# Configuration spécifique à Flutter
+flutter:
+  # Inclure la police Material Icons
+  uses-material-design: true
