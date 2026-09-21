@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../data/arab_locations_data.dart';
 import '../models/data_models.dart';
 import '../services/api_service.dart';
 import '../services/app_localizations.dart';
@@ -16,279 +17,8 @@ class _AdminClientsScreenState extends State<AdminClientsScreen> {
   bool _isLoading = true;
   String _searchQuery = '';
 
-  // قاموس شامل ودقيق لجميع دول جامعة الدول العربية الـ 22 كاملة مكملة بولاياتها ومدنها
-  static const Map<String, Map<String, List<String>>> _locationData = {
-    // -----------------------------------------------------------------
-    // 1. دول المغرب العربي وشمال إفريقيا (Maghreb & North Africa)
-    // -----------------------------------------------------------------
-    'تونس': {
-      'تونس العاصمة': ['تونس', 'المرسى', 'سيدي بوسعيد', 'باردو', 'قرطاج', 'حلق الوادي', 'الكرم'],
-      'أريانة': ['أريانة', 'رواد', 'سكرة', 'المنيهلة', 'قلعة الأندلس'],
-      'بن عروس': ['بن عروس', 'حمّام الأنف', 'رادس', 'مقرين', 'المروج', 'الزهراء', 'فوشانة'],
-      'منوبة': ['منوبة', 'دوار هيشر', 'وادي الليل', 'طبربة', 'الجديدة'],
-      'نابل': ['نابل', 'الحمامات', 'قليبية', 'منزل تميم', 'قرمبالية', 'الهوارية'],
-      'زغوان': ['زغوان', 'الفحص', 'الناظور'],
-      'بنزرت': ['بنزرت', 'منزل بورقيبة', 'راس الجبل', 'ماطر', 'جومين'],
-      'باجة': ['باجة', 'مجاز الباب', 'تستور', 'نفزة'],
-      'جندوبة': ['جندوبة', 'طبرقة', 'عين دراهم', 'غار الدماء'],
-      'الكاف': ['الكاف', 'تاجروين', 'دهماني'],
-      'سليانة': ['سليانة', 'مكثر', 'بوعرادة'],
-      'سوسة': ['سوسة', 'حمام سوسة', 'القنطاوي', 'مصرين', 'النفيضة', 'القلعة الكبرى', 'القلعة الصغرى'],
-      'المنستير': ['المنستير', 'مكنين', 'جمال', 'الفرينة', 'قصر هلال', 'طبلبة'],
-      'المهدية': ['المهدية', 'قصور الساف', 'الشابة'],
-      'صفاقس': ['صفاقس', 'ساقية الزيت', 'ساقية الداير', 'طينة', 'المحرس', 'قرقنة'],
-      'القيروان': ['القيروان', 'بوحجلة', 'السبيخة', 'حفوز', 'وسلاتية'],
-      'القصرين': ['القصرين', 'سبيطلة', 'فريانة', 'تالة'],
-      'سيدي بوزيد': ['سيدي بوزيد', 'الرقاب', 'المكناسي'],
-      'قابس': ['قابس', 'الحامة', 'مارث', 'مطماطة'],
-      'مدنين': ['مدنين', 'جربة حومة السوق', 'جربة ميدون', 'جرجيس', 'بنقردان'],
-      'تطاوين': ['تطاوين', 'غمراسن', 'رمادة'],
-      'قفصة': ['قفصة', 'المتلاوي', 'أم العرائس', 'الرديف'],
-      'توزر': ['توزر', 'دقاش', 'نفطة'],
-      'قبلي': ['قبلي', 'دوز', 'سوق الأحد'],
-    },
-    'الجزائر': {
-      'الجزائر العاصمة': ['الجزائر', 'باب الوادي', 'الشراقة', 'الدار البيضاء', 'زرالدة'],
-      'وهران': ['وهران', 'السانية', 'أرزيو', 'عين الترك'],
-      'قسنطينة': ['قسنطينة', 'الخروب', 'زيغود يوسف'],
-      'عنابة': ['عنابة', 'البوني', 'الحجار'],
-      'سطيف': ['سطيف', 'العلمة', 'عين ولمان'],
-      'البليدة': ['البليدة', 'بوفاريك', 'العفرون'],
-      'تلمسان': ['تلمسان', 'مغنية', 'الرمشي'],
-      'باتنة': ['باتنة', 'عين التوتة'],
-      'بجاية': ['بجاية', 'أقبو'],
-      'بسكرة': ['بسكرة', 'طولقة'],
-      'تيزي وزو': ['تيزي وزو', 'عزازقة'],
-      'الشلف': ['الشلف', 'تنس'],
-      'مستغانم': ['مستغانم', 'عين تادلس'],
-      'ورقلة': ['ورقلة', 'حاسي مسعود'],
-      'غرداية': ['غرداية', 'متليلي'],
-      'سكيكدة': ['سكيكدة', 'الحروش'],
-      'جيجل': ['جيجل', 'الطاهير'],
-    },
-    'المغرب': {
-      'الرباط - سلا - القنيطرة': ['الرباط', 'سلا', 'القنيطرة', 'الصخيرات'],
-      'الدار البيضاء - سطات': ['الدار البيضاء', 'المحمدية', 'سطات', 'الجديدة'],
-      'مراكش - أسفي': ['مراكش', 'أسفي', 'الصويرة'],
-      'فاس - مكناس': ['فاس', 'مكناس', 'تازة'],
-      'طنجة - تطوان - الحسيمة': ['طنجة', 'تطوان', 'الحسيمة', 'العرائش'],
-      'الشرق': ['وجدة', 'الناظور', 'بركان'],
-      'سوس - ماسة': ['أكادير', 'تارودانت', 'تزنيت'],
-      'العيون - الساقية الحمراء': ['العيون', 'بوجدور'],
-      'الداخلة - وادي الذهب': ['الداخلة'],
-    },
-    'ليبيا': {
-      'طرابلس': ['طرابلس', 'تاجوراء', 'أبو سليم'],
-      'بنغازي': ['بنغازي', 'الصابري', 'البركة'],
-      'مصراتة': ['مصراتة', 'زليتن'],
-      'الزاوية': ['الزاوية', 'صرامان'],
-      'البيضاء': ['البيضاء', 'شحات'],
-      'سبها': ['سبها', 'مرزق'],
-      'طبرق': ['طبرق', 'امساعد'],
-      'سرت': ['سرت'],
-    },
-    'موريتانيا': {
-      'نواكشوط': ['نواكشوط الشمالية', 'نواكشوط الغربية', 'نواكشوط الجنوبية'],
-      'داخلت نواذيبو': ['نواذيبو'],
-      'اترارزة': ['روصو'],
-      'الحوض الشرقي': ['نعمة'],
-    },
-    'مصر': {
-      'محافظة القاهرة': ['القاهرة', 'مدينة نصر', 'التجمع الخامس', 'المعادي', 'مصر الجديدة', 'الشروق'],
-      'محافظة الجيزة': ['الجيزة', '6 أكتوبر', 'الشيخ زايد', 'الهرم', 'الدقي'],
-      'محافظة الإسكندرية': ['الإسكندرية', 'سموحة', 'المنتزه', 'العجمي', 'برج العرب'],
-      'محافظة الدقهلية': ['المنصورة', 'ميت غمر'],
-      'محافظة الشرقية': ['الزقازيق', 'العاشر من رمضان'],
-      'محافظة القليوبية': ['بنها', 'شبرا الخيمة', 'العبور'],
-      'محافظة البحر الأحمر': ['الغردقة', 'الجونة', 'مرسى علم'],
-      'محافظة جنوب سيناء': ['شرم الشيخ', 'دهب', 'نويبع'],
-      'محافظة مطروح': ['مرسى مطروح', 'العلمين'],
-    },
-    'السودان': {
-      'ولاية الخرطوم': ['الخرطوم', 'أم درمان', 'بحري'],
-      'ولاية البحر الأحمر': ['بورتسودان', 'سواكن'],
-      'ولاية كسلا': ['كسلا'],
-      'ولاية القضارف': ['القضارف'],
-      'ولاية الجزيرة': ['ود مدني'],
-      'الولاية الشمالية': ['دنقلا', 'مروي'],
-    },
-    'الصومال': {
-      'إقليم بنادر': ['مقديشو'],
-      'إقليم وقويي جالبيد': ['هرجيسا'],
-      'إقليم باري': ['بوساسو'],
-      'إقليم بايكول': ['بيدوا'],
-      'إقليم جوبا السفلى': ['كيسمايو'],
-    },
-    'جيبوتي': {
-      'إقليم جيبوتي': ['جيبوتي العاصمة'],
-      'إقليم علي صبيح': ['علي صبيح'],
-      'إقليم تاجورة': ['تاجورة'],
-      'إقليم دخيل': ['دخيل'],
-      'إقليم أوبوك': ['أوبوك'],
-    },
-    'جزر القمر': {
-      'جزيرة أنجوان': ['موتسامودو'],
-      'جزيرة القمر الكبرى': ['موروني'],
-      'جزيرة موهيلي': ['فومبوني'],
-    },
-
-    // -----------------------------------------------------------------
-    // 2. دول الخليج العربي (GCC)
-    // -----------------------------------------------------------------
-    'السعودية': {
-      'منطقة الرياض': ['الرياض', 'الخرج', 'الدرعية', 'المجمعة', 'الدوادمي'],
-      'منطقة مكة المكرمة': ['جدة', 'مكة المكرمة', 'الطائف', 'القنفذة', 'رابغ'],
-      'المنطقة الشرقية': ['الدمام', 'الخبر', 'الظهران', 'الأحساء', 'القطيف', 'الجبيل'],
-      'منطقة المدينة المنورة': ['المدينة المنورة', 'ينبع', 'العلا'],
-      'منطقة القصيم': ['بريدة', 'عنيزة', 'الرس'],
-      'منطقة عسير': ['أبها', 'خميس مشيط', 'محايل عسير'],
-      'منطقة تبوك': ['تبوك', 'نيوم', 'الوجه'],
-      'منطقة حائل': ['حائل'],
-      'منطقة جازان': ['جازان', 'صبيا'],
-      'منطقة نجران': ['نجران'],
-      'منطقة الحدود الشمالية': ['عرعر'],
-      'منطقة الجوف': ['سكاكا'],
-      'منطقة الباحة': ['الباحة'],
-    },
-    'الإمارات': {
-      'إمارة دبي': ['دبي', 'ديرة', 'بر دبي', 'جبل علي', 'دبي ماربيا'],
-      'إمارة أبوظبي': ['أبوظبي', 'العين', 'الظفرة'],
-      'إمارة الشارقة': ['الشارقة', 'خورفكان', 'كلباء'],
-      'إمارة عجمان': ['عجمان'],
-      'إمارة رأس الخيمة': ['رأس الخيمة'],
-      'إمارة الفجيرة': ['الفجيرة'],
-      'إمارة أم القيوين': ['أم القيوين'],
-    },
-    'قطر': {
-      'بلدية الدوحة': ['الدوحة', 'اللؤلؤة', 'الدفنة', 'مشيرب'],
-      'بلدية الريان': ['الريان', 'معيذر', 'الغرافة'],
-      'بلدية الوكرة': ['الوكرة', 'مسيعيد'],
-      'بلدية الخور والدخيرة': ['الخور'],
-      'بلدية أم صلال': ['أم صلال علي', 'أم صلال محمد'],
-      'بلدية الظعاين': ['لوسيل'],
-    },
-    'الكويت': {
-      'محافظة العاصمة': ['الكويت', 'شرق', 'المرقاب', 'المنصورية'],
-      'محافظة حولي': ['حولي', 'السالمية', 'سلوى', 'الرميثية'],
-      'محافظة الفروانية': ['الفروانية', 'خيطان', 'الجليب'],
-      'محافظة الأحمدي': ['الأحمدي', 'الفحيحيل', 'المنقف'],
-      'محافظة الجهراء': ['الجهراء', 'الصليبية'],
-      'محافظة مبارك الكبير': ['صباح السالم', 'القرين'],
-    },
-    'سلطنة عمان': {
-      'محافظة مسقط': ['مسقط', 'السيب', 'مطرح', 'بوشر', 'العامرات'],
-      'محافظة ظفار': ['صلالة', 'طاقة', 'مرباط'],
-      'محافظة مسندم': ['خصب', 'دبا'],
-      'محافظة البريمي': ['البريمي'],
-      'محافظة الداخلية': ['نزوى', 'بهلاء', 'سمائل'],
-      'محافظة شمال الباطنة': ['صحار', 'السويق', 'صحم'],
-      'محافظة جنوب الباطنة': ['الرستاق', 'بركاء'],
-    },
-    'البحرين': {
-      'محافظة العاصمة': ['المنامة', 'الجفير', 'سترة'],
-      'محافظة المحرق': ['المحرق', 'الحد', 'عراد'],
-      'المحافظة الشمالية': ['المدينة الشمالية', 'البديع', 'سار'],
-      'المحافظة الجنوبية': ['الرفاع', 'مدينة عيسى', 'الزلاق'],
-    },
-
-    // -----------------------------------------------------------------
-    // 3. دول الشام والعراق واليمن (Levant, Iraq & Yemen)
-    // -----------------------------------------------------------------
-    'فلسطين': {
-      'محافظة القدس': ['القدس', 'العيزرية', 'أبو ديس'],
-      'محافظة رام الله والبيرة': ['رام الله', 'البيرة', 'بيتونيا'],
-      'محافظة غزة': ['غزة', 'الرمال'],
-      'محافظة الخليل': ['الخليل', 'حلحول', 'يطة'],
-      'محافظة نابلس': ['نابلس', 'حوارة'],
-      'محافظة بيت لحم': ['بيت لحم', 'بيت جالا', 'بيت ساحور'],
-      'محافظة جنين': ['جنين', 'يعبد'],
-      'محافظة أريحا': ['أريحا'],
-      'محافظة خان يونس': ['خان يونس'],
-      'محافظة رفح': ['رفح'],
-    },
-    'الأردن': {
-      'محافظة العاصمة (عمان)': ['عمان', 'العبدلي', 'الشميساني', 'الجبيهة', 'مرج الحمام'],
-      'محافظة الزرقاء': ['الزرقاء', 'الرصيفة'],
-      'محافظة إربد': ['إربد', 'الرمثا'],
-      'محافظة العقبة': ['العقبة'],
-      'محافظة البلقاء': ['السلط', 'عين الباشا'],
-      'محافظة المفرق': ['المفرق'],
-      'محافظة الكرك': ['الكرك'],
-      'محافظة مادبا': ['مأدبا'],
-      'محافظة جرش': ['جرش'],
-      'محافظة عجلون': ['عجلون'],
-      'محافظة معان': ['معان', 'البتراء'],
-      'محافظة الطفيلة': ['الطفيلة'],
-    },
-    'لبنان': {
-      'محافظة بيروت': ['بيروت', 'الأشرفية', 'الحمرا'],
-      'محافظة جبل لبنان': ['بعبدا', 'جونيه', 'جبيل', 'الشويفات'],
-      'محافظة الشمال': ['طرابلس', 'البترون'],
-      'محافظة الجنوب': ['صيدا', 'صور'],
-      'محافظة البقاع': ['زحلة', 'شتورة'],
-      'محافظة النبطية': ['النبطية'],
-      'محافظة بعلبك الهرمل': ['بعلبك'],
-    },
-    'سوريا': {
-      'محافظة دمشق': ['دمشق', 'المزة', 'الميدان'],
-      'محافظة ريف دمشق': ['جرمانا', 'قدسيا', 'دوما'],
-      'محافظة حلب': ['حلب', 'عفرين'],
-      'محافظة حمص': ['حمص', 'تدمر'],
-      'محافظة حماة': ['حماة', 'سلمية'],
-      'محافظة اللاذقية': ['اللاذقية', 'جبلة'],
-      'محافظة طرطوس': ['طرطوس', 'بانياس'],
-      'محافظة درعا': ['درعا'],
-      'محافظة دير الزور': ['دير الزور'],
-      'محافظة إدلب': ['إدلب'],
-      'محافظة الرقة': ['الرقة'],
-      'محافظة الحسكة': ['الحسكة', 'القامشلي'],
-      'محافظة السويداء': ['السويداء'],
-    },
-    'العراق': {
-      'محافظة بغداد': ['بغداد', 'الكرخ', 'الرصافة', 'المنصور'],
-      'محافظة البصرة': ['البصرة', 'الزبير', 'الفاو'],
-      'محافظة أربيل': ['أربيل', 'عنكاوا'],
-      'محافظة نينوى': ['الموصل', 'تلعفر'],
-      'محافظة النجف': ['النجف', 'الكوفة'],
-      'محافظة كربلاء': ['كربلاء'],
-      'محافظة السليمانية': ['السليمانية'],
-      'محافظة دهوك': ['دهوك', 'زاخو'],
-      'محافظة كركوك': ['كركوك'],
-      'محافظة الأنبار': ['الرمادي', 'الفلوجة'],
-      'محافظة بابل': ['الحلة'],
-      'محافظة ذي قار': ['الناصرية'],
-      'محافظة صلاح الدين': ['تكريت', 'سامراء'],
-      'محافظة ديالي': ['بعقوبة'],
-    },
-    'اليمن': {
-      'أمانة العاصمة': ['صنعاء'],
-      'محافظة عدن': ['عدن', 'كريتر', 'الشيخ عثمان'],
-      'محافظة تعز': ['تعز'],
-      'محافظة الحديدة': ['الحديدة'],
-      'محافظة حضرموت': ['المكلا', 'سيئون'],
-      'محافظة إب': ['إب'],
-      'محافظة ذمار': ['ذمار'],
-      'محافظة مأرب': ['مأرب'],
-      'محافظة شبوة': ['عتق'],
-    },
-
-    // -----------------------------------------------------------------
-    // 4. دول دولية أخرى
-    // -----------------------------------------------------------------
-    'فرنسا (France)': {
-      'Île-de-France': ['Paris', 'Boulogne-Billancourt', 'Versailles'],
-      'Provence-Alpes-Côte d\'Azur': ['Marseille', 'Nice', 'Cannes'],
-      'Auvergne-Rhône-Alpes': ['Lyon', 'Grenoble'],
-    },
-    'تركيا (Turkey)': {
-      'إسطنبول (Istanbul)': ['الفاتح', 'تقسيم', 'باشاك شهير', 'كاديكوي'],
-      'أنقرة (Ankara)': ['أنقرة', 'تشانكايا'],
-      'أنطاليا (Antalya)': ['أنطاليا', 'ألانيا'],
-    },
-    'دولة أخرى': {
-      'المنطقة الرئيسية': ['المدينة الرئيسية'],
-    }
-  };
+  // ربط القاموس الجغرافي الشامل لدول جامعة الدول العربية الـ 22 ودول العالم من الملف المخصص
+  static Map<String, Map<String, List<String>>> get _locationData => ArabLocationsData.locationsMap;
 
   @override
   void initState() {
@@ -309,7 +39,7 @@ class _AdminClientsScreenState extends State<AdminClientsScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('حدث خطأ أثناء جلب قائمة الحرفاء')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.tr('error'))));
       }
     }
   }
@@ -325,6 +55,443 @@ class _AdminClientsScreenState extends State<AdminClientsScreen> {
     }).toList();
   }
 
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<Locale>(
+      valueListenable: localeNotifier,
+      builder: (context, locale, _) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+
+        return Scaffold(
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          appBar: AppBar(
+            title: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.blue.withValues(alpha: 0.2) : Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.people_alt_rounded, color: Colors.blue, size: 22),
+                ),
+                const SizedBox(width: 12),
+                Text(AppLocalizations.tr('client_management_title'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+              ],
+            ),
+            elevation: 0,
+            actions: [
+              buildLanguageSelector(isDark),
+              const SizedBox(width: 8),
+              ValueListenableBuilder<ThemeMode>(
+                valueListenable: themeNotifier,
+                builder: (_, mode, _) {
+                  return IconButton(
+                    icon: Icon(mode == ThemeMode.light ? Icons.dark_mode_outlined : Icons.light_mode_outlined, 
+                        color: isDark ? Colors.amber : const Color(0xFF1E293B)),
+                    tooltip: AppLocalizations.tr('theme_toggle'),
+                    onPressed: () {
+                      themeNotifier.value = mode == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
+                    },
+                  );
+                }
+              ),
+              const SizedBox(width: 16),
+            ],
+          ),
+          body: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : LayoutBuilder(
+                  builder: (context, constraints) {
+                    final double screenWidth = constraints.maxWidth;
+                    final bool isMobile = screenWidth < 650;
+                    final bool isTablet = screenWidth >= 650 && screenWidth < 950;
+
+                    return SingleChildScrollView(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isMobile ? 16 : (isTablet ? 24 : 40),
+                        vertical: isMobile ? 20 : 32,
+                      ),
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 1100),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // 1. بطاقات ملخص الإحصائيات المباشرة للحرفاء (KPI Cards)
+                              _buildClientKpiOverview(isDark, isMobile, isTablet),
+                              const SizedBox(height: 32),
+
+                              // 2. شريط البحث والأمر الإنشائي
+                              _buildSearchAndActionBar(isDark, isMobile),
+                              const SizedBox(height: 24),
+
+                              // 3. شبكة/قائمة الحرفاء المتجاوبة
+                              _filteredClients.isEmpty
+                                  ? _buildEmptyState(isDark)
+                                  : _buildClientsGrid(_filteredClients, isDark, isMobile, isTablet),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+        );
+      },
+    );
+  }
+
+  // 1. ملخص الإحصائيات المباشرة للحرفاء
+  Widget _buildClientKpiOverview(bool isDark, bool isMobile, bool isTablet) {
+    final int withCompanyCount = _clients.where((c) => c.companyName.trim().isNotEmpty).length;
+    final int totalProjects = _clients.fold(0, (sum, c) => sum + c.projectsCount);
+    final int countriesCount = _clients.map((c) => c.country).where((c) => c.trim().isNotEmpty).toSet().length;
+
+    final cards = [
+      _buildKpiCard(AppLocalizations.tr('total_clients'), '${_clients.length}', Icons.group_rounded, const Color(0xFF3B82F6), isDark),
+      _buildKpiCard(AppLocalizations.tr('company_name'), '$withCompanyCount', Icons.business_rounded, const Color(0xFF8B5CF6), isDark),
+      _buildKpiCard(AppLocalizations.tr('projects_count_label'), '$totalProjects', Icons.folder_copy_rounded, const Color(0xFF10B981), isDark),
+      _buildKpiCard(AppLocalizations.tr('country'), '$countriesCount', Icons.public_rounded, const Color(0xFFF59E0B), isDark),
+    ];
+
+    if (isMobile) {
+      return GridView.count(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        crossAxisCount: 2,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: 1.5,
+        children: cards,
+      );
+    } else if (isTablet) {
+      return GridView.count(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        crossAxisCount: 2,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
+        childAspectRatio: 2.2,
+        children: cards,
+      );
+    } else {
+      return Row(
+        children: cards.map((c) => Expanded(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 6), child: c))).toList(),
+      );
+    }
+  }
+
+  Widget _buildKpiCard(String title, String value, IconData icon, Color color, bool isDark) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: isDark ? 0.15 : 0.06),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          )
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(icon, color: color, size: 26),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(title, style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 12, fontWeight: FontWeight.w500)),
+                const SizedBox(height: 4),
+                Text(value, style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: isDark ? Colors.white : const Color(0xFF0F172A))),
+              ],
+            ),
+          )
+        ],
+      ),
+    );
+  }
+
+  // 2. شريط البحث والأمر الإنشائي
+  Widget _buildSearchAndActionBar(bool isDark, bool isMobile) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+      ),
+      child: isMobile
+          ? Column(
+              children: [
+                _buildSearchInput(isDark),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () => _showClientFormModal(),
+                    icon: const Icon(Icons.person_add_rounded),
+                    label: Text(AppLocalizations.tr('add_new_client')),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: isDark ? Colors.blue.shade600 : const Color(0xFF1E293B),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                ),
+              ],
+            )
+          : Row(
+              children: [
+                Expanded(child: _buildSearchInput(isDark)),
+                const SizedBox(width: 16),
+                ElevatedButton.icon(
+                  onPressed: () => _showClientFormModal(),
+                  icon: const Icon(Icons.person_add_rounded),
+                  label: Text(AppLocalizations.tr('add_new_client')),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isDark ? Colors.blue.shade600 : const Color(0xFF1E293B),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ],
+            ),
+    );
+  }
+
+  Widget _buildSearchInput(bool isDark) {
+    return TextField(
+      onChanged: (val) => setState(() => _searchQuery = val),
+      decoration: InputDecoration(
+        hintText: AppLocalizations.tr('search_clients_placeholder'),
+        hintStyle: TextStyle(color: isDark ? Colors.grey.shade500 : Colors.grey.shade400, fontSize: 13),
+        prefixIcon: const Icon(Icons.search_rounded, size: 20),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+        filled: true,
+        fillColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+      ),
+    );
+  }
+
+  // 3. شبكة/قائمة الحرفاء الفخمة
+  Widget _buildClientsGrid(List<ClientUser> clients, bool isDark, bool isMobile, bool isTablet) {
+    if (isMobile) {
+      return ListView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: clients.length,
+        itemBuilder: (ctx, i) => _buildClientCard(clients[i], isDark, isMobile),
+      );
+    } else {
+      final int crossCount = isTablet ? 2 : 2;
+      return GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: crossCount,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+          mainAxisExtent: 220,
+        ),
+        itemCount: clients.length,
+        itemBuilder: (ctx, i) => _buildClientCard(clients[i], isDark, isMobile),
+      );
+    }
+  }
+
+  // بطاقة الحريف الفردية الأنيقة
+  Widget _buildClientCard(ClientUser c, bool isDark, bool isMobile) {
+    final String displayName = c.fullName.isNotEmpty ? c.fullName : c.username;
+    final String locationStr = [c.country, c.state, c.city].where((s) => s.isNotEmpty).join(' • ');
+
+    return Container(
+      margin: EdgeInsets.only(bottom: isMobile ? 14 : 0),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
+            blurRadius: 15,
+            offset: const Offset(0, 6),
+          )
+        ],
+      ),
+      padding: EdgeInsets.all(isMobile ? 16 : 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // الهيدر: رمز الصورة + الاسم واللقب + وسم الحساب
+          Row(
+            children: [
+              Container(
+                width: 46,
+                height: 48,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.blue.shade400, Colors.blue.shade700],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Center(
+                  child: Text(
+                    displayName.isNotEmpty ? displayName[0].toUpperCase() : 'C',
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      displayName,
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: isMobile ? 16 : 17, color: isDark ? Colors.white : const Color(0xFF0F172A)),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '@${c.username}',
+                      style: TextStyle(color: isDark ? Colors.blue.shade300 : Colors.blue.shade700, fontSize: 12, fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  '${c.projectsCount} ${AppLocalizations.tr('projects_count_label')}',
+                  style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 11),
+                ),
+              ),
+            ],
+          ),
+
+          // تفاصيل الشركة والعنوان الجغرافي
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (c.companyName.isNotEmpty) ...[
+                Row(
+                  children: [
+                    const Icon(Icons.business_rounded, size: 14, color: Colors.purple),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        c.companyName,
+                        style: const TextStyle(color: Colors.purple, fontSize: 12, fontWeight: FontWeight.bold),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+              ],
+              if (locationStr.isNotEmpty) ...[
+                Row(
+                  children: [
+                    Icon(Icons.location_on_outlined, size: 14, color: isDark ? Colors.grey.shade400 : Colors.grey.shade600),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        locationStr,
+                        style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey.shade600, fontSize: 12),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+
+          Divider(color: isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9), height: 1),
+
+          // أزرار التعديل والحذف
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              OutlinedButton.icon(
+                onPressed: () => _showClientFormModal(client: c),
+                icon: const Icon(Icons.edit_outlined, size: 15),
+                label: Text(AppLocalizations.tr('edit'), style: const TextStyle(fontSize: 12)),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.blue,
+                  side: BorderSide(color: Colors.blue.withValues(alpha: 0.5)),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+              ),
+              const SizedBox(width: 8),
+              OutlinedButton.icon(
+                onPressed: () => _confirmDeleteClient(c),
+                icon: const Icon(Icons.delete_outline_rounded, size: 15),
+                label: Text(AppLocalizations.tr('delete'), style: const TextStyle(fontSize: 12)),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFFEF4444),
+                  side: BorderSide(color: const Color(0xFFEF4444).withValues(alpha: 0.5)),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // حالة عدم وجود نتائج
+  Widget _buildEmptyState(bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.all(40),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.people_outline_rounded, size: 80, color: isDark ? Colors.grey.shade700 : Colors.grey.shade300),
+            const SizedBox(height: 16),
+            Text(AppLocalizations.tr('no_clients_found'), style: TextStyle(fontSize: 18, color: isDark ? Colors.grey.shade400 : Colors.grey.shade600)),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              onPressed: () => _showClientFormModal(), 
+              icon: const Icon(Icons.person_add_rounded), 
+              label: Text(AppLocalizations.tr('add_new_client')),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+
   // نافذة إضافة / تعديل الحريف المتقدمة والمتجاوبة
   void _showClientFormModal({ClientUser? client}) {
     final bool isEditing = client != null;
@@ -333,7 +500,6 @@ class _AdminClientsScreenState extends State<AdminClientsScreen> {
     final fullNameCtrl = TextEditingController(text: client?.fullName ?? '');
     final companyCtrl = TextEditingController(text: client?.companyName ?? '');
 
-    // إعدادات الموقع القابلة للاختيار التلقائي مع دعم الخيار الفارغ
     String selectedCountry = client != null && client.country.isNotEmpty && _locationData.containsKey(client.country)
         ? client.country
         : _locationData.keys.first;
@@ -342,6 +508,7 @@ class _AdminClientsScreenState extends State<AdminClientsScreen> {
     String? selectedCity = (client != null && client.city.isNotEmpty) ? client.city : null;
 
     bool isSaving = false;
+    bool obscurePassword = true;
 
     showDialog(
       context: context,
@@ -354,7 +521,6 @@ class _AdminClientsScreenState extends State<AdminClientsScreen> {
             final double screenWidth = MediaQuery.of(context).size.width;
             final bool isMobile = screenWidth < 650;
 
-            // تحديث القوائم الفرعية تلقائياً عند تغيير الدولة أو الولاية
             Map<String, List<String>> statesMap = _locationData[selectedCountry] ?? {};
             List<String> statesList = statesMap.keys.toList();
 
@@ -362,11 +528,10 @@ class _AdminClientsScreenState extends State<AdminClientsScreen> {
                 ? statesMap[selectedState]!
                 : [];
 
-            // قائمة خيارات الولايات مع الخيار الفارغ الاختياري
             List<DropdownMenuItem<String?>> stateItems = [
               DropdownMenuItem<String?>(
                 value: null,
-                child: Text('-- بدون تحديد (اختياري) --', style: TextStyle(color: Colors.grey.shade500, fontSize: 13)),
+                child: Text(AppLocalizations.tr('unspecified_optional'), style: TextStyle(color: Colors.grey.shade500, fontSize: 13)),
               ),
               ...statesList.map((s) => DropdownMenuItem<String?>(
                 value: s,
@@ -374,11 +539,10 @@ class _AdminClientsScreenState extends State<AdminClientsScreen> {
               )),
             ];
 
-            // قائمة خيارات المدن مع الخيار الفارغ الاختياري
             List<DropdownMenuItem<String?>> cityItems = [
               DropdownMenuItem<String?>(
                 value: null,
-                child: Text('-- بدون تحديد (اختياري) --', style: TextStyle(color: Colors.grey.shade500, fontSize: 13)),
+                child: Text(AppLocalizations.tr('unspecified_optional'), style: TextStyle(color: Colors.grey.shade500, fontSize: 13)),
               ),
               ...citiesList.map((ci) => DropdownMenuItem<String?>(
                 value: ci,
@@ -397,7 +561,6 @@ class _AdminClientsScreenState extends State<AdminClientsScreen> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // الهيدر
                       Row(
                         children: [
                           Container(
@@ -420,11 +583,9 @@ class _AdminClientsScreenState extends State<AdminClientsScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  isEditing ? 'تعديل بيانات الحريف' : 'إضافة حريف جديد',
+                                  isEditing ? AppLocalizations.tr('edit_client') : AppLocalizations.tr('add_new_client'),
                                   style: TextStyle(fontSize: isMobile ? 18 : 22, fontWeight: FontWeight.bold, color: isDark ? Colors.white : const Color(0xFF0F172A)),
                                 ),
-                                const SizedBox(height: 2),
-                                Text('إدخال بيانات الهوية والعنوان والشركة للحريف', style: TextStyle(fontSize: 12, color: isDark ? Colors.grey.shade400 : Colors.grey.shade600)),
                               ],
                             ),
                           ),
@@ -439,52 +600,53 @@ class _AdminClientsScreenState extends State<AdminClientsScreen> {
                       Divider(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
                       const SizedBox(height: 16),
 
-                      // 1. البيانات الشخصية والحساب (مطلوبة)
-                      _buildSectionHeader('بيانات الحساب والهوية', Icons.person_outline_rounded, isDark),
+                      _buildSectionHeader(AppLocalizations.tr('account_identity_info'), Icons.person_outline_rounded, isDark),
                       const SizedBox(height: 14),
 
                       if (isMobile) ...[
-                        _buildTextField(fullNameCtrl, 'الاسم واللقب', 'مثال: وليد الحساني', Icons.badge_outlined, isDark),
+                        _buildTextField(fullNameCtrl, AppLocalizations.tr('full_name'), 'ex: Walid Al-Hassani', Icons.badge_outlined, isDark),
                         const SizedBox(height: 14),
-                        _buildTextField(usernameCtrl, 'اسم المستخدم (Username)', 'مثال: walid_h', Icons.account_circle_outlined, isDark),
+                        _buildTextField(usernameCtrl, AppLocalizations.tr('username'), 'ex: walid_h', Icons.account_circle_outlined, isDark),
                       ] else ...[
                         Row(
                           children: [
-                            Expanded(child: _buildTextField(fullNameCtrl, 'الاسم واللقب', 'مثال: وليد الحساني', Icons.badge_outlined, isDark)),
+                            Expanded(child: _buildTextField(fullNameCtrl, AppLocalizations.tr('full_name'), 'ex: Walid Al-Hassani', Icons.badge_outlined, isDark)),
                             const SizedBox(width: 14),
-                            Expanded(child: _buildTextField(usernameCtrl, 'اسم المستخدم (Username)', 'مثال: walid_h', Icons.account_circle_outlined, isDark)),
+                            Expanded(child: _buildTextField(usernameCtrl, AppLocalizations.tr('username'), 'ex: walid_h', Icons.account_circle_outlined, isDark)),
                           ],
                         ),
                       ],
                       const SizedBox(height: 14),
 
-                      // كلمة المرور
                       _buildTextField(
                         passwordCtrl, 
-                        isEditing ? 'كلمة المرور (أتركها فارغة للعدم التغيير)' : 'كلمة المرور', 
+                        AppLocalizations.tr('password'), 
                         '********', 
                         Icons.lock_outline_rounded, 
                         isDark,
-                        isObscure: true
+                        isObscure: obscurePassword,
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            obscurePassword ? Icons.visibility_off_rounded : Icons.visibility_rounded,
+                            color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                          ),
+                          onPressed: () => setModalState(() => obscurePassword = !obscurePassword),
+                        ),
                       ),
 
                       const SizedBox(height: 24),
 
-                      // 2. بيانات الشركة والموقع (اختيارية بالكامل)
-                      _buildSectionHeader('الشركة والعنوان (اختياري)', Icons.business_outlined, isDark),
+                      _buildSectionHeader(AppLocalizations.tr('company_address_info'), Icons.business_outlined, isDark),
                       const SizedBox(height: 14),
 
-                      // اسم الشركة
-                      _buildTextField(companyCtrl, 'اسم الشركة (اختياري)', 'مثال: وكالة الزلام للإعلانات', Icons.domain_outlined, isDark),
+                      _buildTextField(companyCtrl, AppLocalizations.tr('company_name'), 'ex: OneDev Agency', Icons.domain_outlined, isDark),
                       const SizedBox(height: 14),
 
-                      // القوائم المنسدلة التفاعلية الآلية للموقع
                       Column(
                         children: [
-                          // الدولة (مطلوبة)
                           DropdownButtonFormField<String>(
                             initialValue: selectedCountry,
-                            decoration: _buildInputDecoration('الدولة', Icons.public_rounded, isDark),
+                            decoration: _buildInputDecoration(AppLocalizations.tr('country'), Icons.public_rounded, isDark),
                             dropdownColor: isDark ? const Color(0xFF1E293B) : Colors.white,
                             items: _locationData.keys.map((c) => DropdownMenuItem<String>(
                               value: c,
@@ -503,10 +665,9 @@ class _AdminClientsScreenState extends State<AdminClientsScreen> {
                           const SizedBox(height: 14),
 
                           if (isMobile) ...[
-                            // الولاية (اختياري مع خيار بدون تحديد)
                             DropdownButtonFormField<String?>(
                               initialValue: selectedState,
-                              decoration: _buildInputDecoration('الولاية / المحافظة (اختياري)', Icons.map_outlined, isDark),
+                              decoration: _buildInputDecoration(AppLocalizations.tr('state'), Icons.map_outlined, isDark),
                               dropdownColor: isDark ? const Color(0xFF1E293B) : Colors.white,
                               items: stateItems,
                               onChanged: (val) {
@@ -518,10 +679,9 @@ class _AdminClientsScreenState extends State<AdminClientsScreen> {
                             ),
                             const SizedBox(height: 14),
 
-                            // المدينة (اختياري مع خيار بدون تحديد)
                             DropdownButtonFormField<String?>(
                               initialValue: selectedCity,
-                              decoration: _buildInputDecoration('المدينة / البلدية (اختياري)', Icons.location_city_outlined, isDark),
+                              decoration: _buildInputDecoration(AppLocalizations.tr('city'), Icons.location_city_outlined, isDark),
                               dropdownColor: isDark ? const Color(0xFF1E293B) : Colors.white,
                               items: cityItems,
                               onChanged: (val) {
@@ -534,7 +694,7 @@ class _AdminClientsScreenState extends State<AdminClientsScreen> {
                                 Expanded(
                                   child: DropdownButtonFormField<String?>(
                                     initialValue: selectedState,
-                                    decoration: _buildInputDecoration('الولاية / المحافظة (اختياري)', Icons.map_outlined, isDark),
+                                    decoration: _buildInputDecoration(AppLocalizations.tr('state'), Icons.map_outlined, isDark),
                                     dropdownColor: isDark ? const Color(0xFF1E293B) : Colors.white,
                                     items: stateItems,
                                     onChanged: (val) {
@@ -549,7 +709,7 @@ class _AdminClientsScreenState extends State<AdminClientsScreen> {
                                 Expanded(
                                   child: DropdownButtonFormField<String?>(
                                     initialValue: selectedCity,
-                                    decoration: _buildInputDecoration('المدينة / البلدية (اختياري)', Icons.location_city_outlined, isDark),
+                                    decoration: _buildInputDecoration(AppLocalizations.tr('city'), Icons.location_city_outlined, isDark),
                                     dropdownColor: isDark ? const Color(0xFF1E293B) : Colors.white,
                                     items: cityItems,
                                     onChanged: (val) {
@@ -567,13 +727,12 @@ class _AdminClientsScreenState extends State<AdminClientsScreen> {
                       Divider(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
                       const SizedBox(height: 16),
 
-                      // الأزرار
                       Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
                           TextButton(
                             onPressed: isSaving ? null : () => Navigator.pop(dialogCtx),
-                            child: const Text('إلغاء'),
+                            child: Text(AppLocalizations.tr('cancel')),
                           ),
                           const SizedBox(width: 12),
                           ElevatedButton.icon(
@@ -581,11 +740,6 @@ class _AdminClientsScreenState extends State<AdminClientsScreen> {
                                 ? null
                                 : () async {
                                     if (usernameCtrl.text.trim().isEmpty) {
-                                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('الرجاء كتابة اسم المستخدم')));
-                                      return;
-                                    }
-                                    if (!isEditing && passwordCtrl.text.trim().isEmpty) {
-                                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('الرجاء إدخال كلمة المرور')));
                                       return;
                                     }
 
@@ -620,13 +774,13 @@ class _AdminClientsScreenState extends State<AdminClientsScreen> {
                                     } catch (e) {
                                       setModalState(() => isSaving = false);
                                       if (!context.mounted) return;
-                                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))));
+                                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.tr('error'))));
                                     }
                                   },
                             icon: isSaving
                                 ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                                 : Icon(isEditing ? Icons.save_rounded : Icons.person_add_rounded, size: 18),
-                            label: Text(isEditing ? 'حفظ التعديلات' : 'إضافة الحريف'),
+                            label: Text(isEditing ? AppLocalizations.tr('save_changes') : AppLocalizations.tr('add_new_client')),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: isDark ? Colors.blue.shade600 : const Color(0xFF1E293B),
                               foregroundColor: Colors.white,
@@ -657,21 +811,22 @@ class _AdminClientsScreenState extends State<AdminClientsScreen> {
     );
   }
 
-  Widget _buildTextField(TextEditingController ctrl, String label, String hint, IconData icon, bool isDark, {bool isObscure = false}) {
+  Widget _buildTextField(TextEditingController ctrl, String label, String hint, IconData icon, bool isDark, {bool isObscure = false, Widget? suffixIcon}) {
     return TextField(
       controller: ctrl,
       obscureText: isObscure,
       style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontSize: 14),
-      decoration: _buildInputDecoration(label, icon, isDark, hint: hint),
+      decoration: _buildInputDecoration(label, icon, isDark, hint: hint, suffixIcon: suffixIcon),
     );
   }
 
-  InputDecoration _buildInputDecoration(String label, IconData icon, bool isDark, {String? hint}) {
+  InputDecoration _buildInputDecoration(String label, IconData icon, bool isDark, {String? hint, Widget? suffixIcon}) {
     return InputDecoration(
       labelText: label,
       hintText: hint,
       hintStyle: TextStyle(color: isDark ? Colors.grey.shade600 : Colors.grey.shade400, fontSize: 12),
       prefixIcon: Icon(icon, size: 20, color: Colors.blue),
+      suffixIcon: suffixIcon,
       filled: true,
       fillColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0))),
@@ -684,204 +839,27 @@ class _AdminClientsScreenState extends State<AdminClientsScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('حذف الحريف'),
-        content: Text('هل أنت متأكد من حذف الحريف "${client.username}"؟ سينتج عن ذلك حذف كافة المشاريع والمهام التابعة له.'),
+        title: Text(AppLocalizations.tr('delete')),
+        content: Text(AppLocalizations.tr('confirm_delete_client')),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppLocalizations.tr('cancel'))),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFEF4444), foregroundColor: Colors.white),
             onPressed: () async {
               try {
                 await ApiService().deleteClient(client.id);
-                if(!ctx.mounted || !mounted) return;
+                if (!ctx.mounted || !mounted) return;
                 Navigator.pop(ctx);
                 _fetchClients();
               } catch (e) {
-                if(!context.mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('حدث خطأ أثناء الحذف')));
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.tr('error'))));
               }
             },
-            child: const Text('نعم، احذف'),
+            child: Text(AppLocalizations.tr('delete')),
           )
         ],
       ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ValueListenableBuilder<Locale>(
-      valueListenable: localeNotifier,
-      builder: (context, locale, _) {
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-
-        return Scaffold(
-          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-          appBar: AppBar(
-            title: Text(AppLocalizations.tr('client_management_title'), style: const TextStyle(fontWeight: FontWeight.bold)),
-            elevation: 1,
-            shadowColor: Colors.black12,
-            actions: [
-              buildLanguageSelector(isDark),
-              const SizedBox(width: 8),
-              ValueListenableBuilder<ThemeMode>(
-                valueListenable: themeNotifier,
-                builder: (_, mode, _) {
-                  return IconButton(
-                    icon: Icon(mode == ThemeMode.light ? Icons.dark_mode_outlined : Icons.light_mode_outlined, 
-                        color: isDark ? Colors.amber : const Color(0xFF1E293B)),
-                    tooltip: AppLocalizations.tr('theme_toggle'),
-                    onPressed: () {
-                      themeNotifier.value = mode == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
-                    },
-                  );
-                }
-              ),
-              const SizedBox(width: 16),
-            ],
-          ),
-          floatingActionButton: FloatingActionButton.extended(
-            onPressed: () => _showClientFormModal(),
-            label: Text(AppLocalizations.tr('add_new_client')),
-            icon: const Icon(Icons.person_add_rounded),
-            backgroundColor: isDark ? Colors.blue.shade600 : const Color(0xFF1E293B),
-            foregroundColor: Colors.white,
-          ),
-          body: _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 1000),
-                      child: Column(
-                        children: [
-                          TextField(
-                            onChanged: (val) => setState(() => _searchQuery = val),
-                            decoration: InputDecoration(
-                              hintText: AppLocalizations.tr('search_clients_placeholder'),
-                              prefixIcon: const Icon(Icons.search_rounded),
-                              filled: true,
-                              fillColor: isDark ? const Color(0xFF1E293B) : Colors.white,
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-
-                          _filteredClients.isEmpty
-                              ? Padding(
-                                  padding: const EdgeInsets.all(40),
-                                  child: Column(
-                                    children: [
-                                      Icon(Icons.people_outline_rounded, size: 80, color: isDark ? Colors.grey.shade700 : Colors.grey.shade300),
-                                      const SizedBox(height: 16),
-                                      Text(AppLocalizations.tr('no_clients_found'), style: TextStyle(fontSize: 18, color: isDark ? Colors.grey.shade400 : Colors.grey.shade600)),
-                                    ],
-                                  ),
-                                )
-                              : ListView.builder(
-                                  shrinkWrap: true,
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  itemCount: _filteredClients.length,
-                                  itemBuilder: (ctx, i) {
-                                    final c = _filteredClients[i];
-                                    final String displayName = c.fullName.isNotEmpty ? c.fullName : c.username;
-                                    final String locationStr = [c.country, c.state, c.city].where((s) => s.isNotEmpty).join(' - ');
-
-                                    return Container(
-                                      margin: const EdgeInsets.only(bottom: 14),
-                                      decoration: BoxDecoration(
-                                        color: isDark ? const Color(0xFF1E293B) : Colors.white,
-                                        borderRadius: BorderRadius.circular(16),
-                                        border: Border.all(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
-                                        boxShadow: [
-                                          BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.02), blurRadius: 10, offset: const Offset(0, 4))
-                                        ],
-                                      ),
-                                      child: ListTile(
-                                        contentPadding: const EdgeInsets.all(20),
-                                        leading: Container(
-                                          padding: const EdgeInsets.all(12),
-                                          decoration: BoxDecoration(
-                                            color: Colors.blue.withValues(alpha: 0.12),
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: const Icon(Icons.person_rounded, color: Colors.blue, size: 28),
-                                        ),
-                                        title: Row(
-                                          children: [
-                                            Text(displayName, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: isDark ? Colors.white : const Color(0xFF0F172A))),
-                                            const SizedBox(width: 10),
-                                            if (c.companyName.isNotEmpty)
-                                              Container(
-                                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                                                decoration: BoxDecoration(
-                                                  color: Colors.purple.withValues(alpha: 0.12),
-                                                  borderRadius: BorderRadius.circular(20),
-                                                ),
-                                                child: Row(
-                                                  mainAxisSize: MainAxisSize.min,
-                                                  children: [
-                                                    const Icon(Icons.business_rounded, size: 12, color: Colors.purple),
-                                                    const SizedBox(width: 4),
-                                                    Text(c.companyName, style: const TextStyle(fontSize: 11, color: Colors.purple, fontWeight: FontWeight.bold)),
-                                                  ],
-                                                ),
-                                              ),
-                                          ],
-                                        ),
-                                        subtitle: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            const SizedBox(height: 6),
-                                            Text('${AppLocalizations.tr('account_username')}: @${c.username}', style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey.shade600, fontSize: 13)),
-                                            if (locationStr.isNotEmpty) ...[
-                                              const SizedBox(height: 4),
-                                              Row(
-                                                children: [
-                                                  Icon(Icons.location_on_outlined, size: 14, color: isDark ? Colors.grey.shade400 : Colors.grey.shade600),
-                                                  const SizedBox(width: 4),
-                                                  Text(locationStr, style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey.shade600, fontSize: 12)),
-                                                ],
-                                              ),
-                                            ],
-                                          ],
-                                        ),
-                                        trailing: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                              decoration: BoxDecoration(
-                                                color: Colors.blue.withValues(alpha: 0.1),
-                                                borderRadius: BorderRadius.circular(20),
-                                              ),
-                                              child: Text('${c.projectsCount} ${AppLocalizations.tr('projects_count_label')}', style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 12)),
-                                            ),
-                                            const SizedBox(width: 8),
-                                            IconButton(
-                                              icon: const Icon(Icons.edit_outlined, color: Colors.blue, size: 20),
-                                              tooltip: AppLocalizations.tr('edit'),
-                                              onPressed: () => _showClientFormModal(client: c),
-                                            ),
-                                            IconButton(
-                                              icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 20),
-                                              tooltip: AppLocalizations.tr('delete'),
-                                              onPressed: () => _confirmDeleteClient(c),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-        );
-      },
     );
   }
 }

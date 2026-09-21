@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../services/api_service.dart';
 import '../services/app_localizations.dart';
 import 'admin_dashboard.dart';
@@ -14,6 +15,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _username = TextEditingController();
   final _password = TextEditingController();
   bool _isLoading = false;
+  bool _obscurePassword = true; // التحكم في إظهار أو إخفاء كلمة المرور
 
   void _login() async {
     if (_username.text.isEmpty || _password.text.isEmpty) return;
@@ -21,15 +23,18 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
     try {
       final role = await ApiService().login(_username.text.trim(), _password.text.trim());
-      if(!mounted) return;
-      
+      if (!mounted) return;
+
+      // إنهاء سياق التعبئة التلقائية لإجبار المتصفح على إظهار نافذة حفظ كلمة المرور
+      TextInput.finishAutofillContext();
+
       if (role == 'admin') {
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const AdminDashboard()));
       } else {
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ClientDashboard()));
       }
     } catch (e) {
-      if(!mounted) return;
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(AppLocalizations.tr('invalid_login_error')),
@@ -37,12 +42,11 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       );
     }
-    if(mounted) setState(() => _isLoading = false);
+    if (mounted) setState(() => _isLoading = false);
   }
 
   @override
   Widget build(BuildContext context) {
-    // الاستماع المباشر لتغييرات اللغة لإعادة بناء شاشة تسجيل الدخول وترجمة كل الكلمات والنصوص
     return ValueListenableBuilder<Locale>(
       valueListenable: localeNotifier,
       builder: (context, locale, _) {
@@ -58,90 +62,104 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
           body: Center(
             child: SingleChildScrollView(
-              child: Container(
-                width: 420,
-                padding: const EdgeInsets.all(32),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).cardColor,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
-                      blurRadius: 30,
-                      offset: const Offset(0, 10),
-                    )
-                  ],
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: isDark ? Colors.blue.withValues(alpha: 0.2) : Colors.blue.shade50,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.rocket_launch_rounded, size: 48, color: Colors.blue),
-                    ),
-                    const SizedBox(height: 20),
-                    Text(
-                      AppLocalizations.tr('welcome_back'),
-                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: isDark ? Colors.white : const Color(0xFF1E293B)),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      AppLocalizations.tr('login_subtitle'),
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 13, color: isDark ? Colors.grey.shade400 : Colors.grey.shade600),
-                    ),
-                    const SizedBox(height: 32),
-
-                    // اسم المستخدم
-                    TextField(
-                      controller: _username,
-                      style: TextStyle(color: isDark ? Colors.white : Colors.black87),
-                      decoration: InputDecoration(
-                        labelText: AppLocalizations.tr('username'),
-                        prefixIcon: const Icon(Icons.person_outline_rounded, color: Colors.blue),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      onSubmitted: (_) => _login(),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // كلمة المرور
-                    TextField(
-                      controller: _password,
-                      obscureText: true,
-                      style: TextStyle(color: isDark ? Colors.white : Colors.black87),
-                      decoration: InputDecoration(
-                        labelText: AppLocalizations.tr('password'),
-                        prefixIcon: const Icon(Icons.lock_outline_rounded, color: Colors.blue),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      onSubmitted: (_) => _login(),
-                    ),
-                    const SizedBox(height: 32),
-
-                    // زر الدخول
-                    SizedBox(
-                      width: double.infinity,
-                      height: 52,
-                      child: ElevatedButton(
-                        onPressed: _isLoading ? null : _login,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: isDark ? Colors.blue.shade600 : const Color(0xFF1E293B),
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          elevation: 2,
+              child: AutofillGroup(
+                child: Container(
+                  width: 420,
+                  padding: const EdgeInsets.all(32),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).cardColor,
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
+                        blurRadius: 30,
+                        offset: const Offset(0, 10),
+                      )
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.blue.withValues(alpha: 0.2) : Colors.blue.shade50,
+                          shape: BoxShape.circle,
                         ),
-                        child: _isLoading
-                            ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                            : Text(AppLocalizations.tr('login'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                        child: const Icon(Icons.rocket_launch_rounded, size: 48, color: Colors.blue),
                       ),
-                    )
-                  ],
+                      const SizedBox(height: 20),
+                      Text(
+                        AppLocalizations.tr('welcome_back'),
+                        style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: isDark ? Colors.white : const Color(0xFF1E293B)),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        AppLocalizations.tr('login_subtitle'),
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 13, color: isDark ? Colors.grey.shade400 : Colors.grey.shade600),
+                      ),
+                      const SizedBox(height: 32),
+
+                      // اسم المستخدم مع دعم التعبئة الحركية للخطوات
+                      TextField(
+                        controller: _username,
+                        autofillHints: const [AutofillHints.username],
+                        style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+                        decoration: InputDecoration(
+                          labelText: AppLocalizations.tr('username'),
+                          prefixIcon: const Icon(Icons.person_outline_rounded, color: Colors.blue),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        onSubmitted: (_) => _login(),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // كلمة المرور مع زر العين التفاعلي لإظهار وإخفاء الباسوورد
+                      TextField(
+                        controller: _password,
+                        autofillHints: const [AutofillHints.password],
+                        obscureText: _obscurePassword,
+                        style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+                        decoration: InputDecoration(
+                          labelText: AppLocalizations.tr('password'),
+                          prefixIcon: const Icon(Icons.lock_outline_rounded, color: Colors.blue),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscurePassword ? Icons.visibility_off_rounded : Icons.visibility_rounded,
+                              color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                            ),
+                            tooltip: _obscurePassword ? 'إظهار كلمة المرور' : 'إخفاء كلمة المرور',
+                            onPressed: () {
+                              setState(() => _obscurePassword = !_obscurePassword);
+                            },
+                          ),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        onSubmitted: (_) => _login(),
+                      ),
+                      const SizedBox(height: 32),
+
+                      // زر تسجيل الدخول
+                      SizedBox(
+                        width: double.infinity,
+                        height: 52,
+                        child: ElevatedButton(
+                          onPressed: _isLoading ? null : _login,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: isDark ? Colors.blue.shade600 : const Color(0xFF1E293B),
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            elevation: 2,
+                          ),
+                          child: _isLoading
+                              ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                              : Text(AppLocalizations.tr('login'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                        ),
+                      )
+                    ],
+                  ),
                 ),
               ),
             ),

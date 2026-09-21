@@ -346,14 +346,14 @@ class _AdminTaskManagerScreenState extends State<AdminTaskManagerScreen> {
       mainAxisSize: MainAxisSize.min,
       children: [
         if (!hasChildren) ...[
-          if (!isDone)
-            IconButton(
-              icon: const Icon(Icons.check_circle_outline_rounded, color: Color(0xFF10B981)),
-              tooltip: AppLocalizations.tr('validate_task'),
-              onPressed: () => _showValidateTaskDialog(t),
-            )
-          else
-            const Icon(Icons.verified_rounded, color: Color(0xFF10B981), size: 20),
+          IconButton(
+            icon: Icon(
+              isDone ? Icons.verified_rounded : Icons.check_circle_outline_rounded,
+              color: const Color(0xFF10B981),
+            ),
+            tooltip: AppLocalizations.tr('validate_task'),
+            onPressed: () => _showValidateTaskDialog(t),
+          ),
         ] else ...[
           isDone
               ? const Icon(Icons.verified_rounded, color: Color(0xFF10B981), size: 20)
@@ -399,7 +399,7 @@ class _AdminTaskManagerScreenState extends State<AdminTaskManagerScreen> {
         }
       },
       itemBuilder: (ctx) => [
-        if (!hasChildren && !isDone)
+        if (!hasChildren)
           PopupMenuItem(
             value: 'validate',
             child: Row(
@@ -445,9 +445,9 @@ class _AdminTaskManagerScreenState extends State<AdminTaskManagerScreen> {
     );
   }
 
-  // نافذة اعتماد المهمة وإرفاق التقرير
+  // نافذة اعتماد المهمة وإرفاق التقرير (تعديل أو إضافة تقرير حتى لو معتمدة)
   void _showValidateTaskDialog(Task task) {
-    final notesCtrl = TextEditingController();
+    final notesCtrl = TextEditingController(text: task.notes);
     bool isSaving = false;
 
     showDialog(
@@ -540,10 +540,11 @@ class _AdminTaskManagerScreenState extends State<AdminTaskManagerScreen> {
     );
   }
 
-  // نافذة تعديل المهمة
+  // نافذة تعديل المهمة (حتى لو معتمدة مع إمكانية تعديل التقرير)
   void _showEditTaskDialog(Task task) {
     final tTitle = TextEditingController(text: task.title);
     final tDesc = TextEditingController(text: task.description);
+    final tNotes = TextEditingController(text: task.notes);
     bool isSaving = false;
 
     showDialog(
@@ -553,13 +554,19 @@ class _AdminTaskManagerScreenState extends State<AdminTaskManagerScreen> {
         builder: (context, setStateDialog) {
           return AlertDialog(
             title: Text(AppLocalizations.tr('edit')),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(controller: tTitle, decoration: InputDecoration(labelText: AppLocalizations.tr('task_title'), border: const OutlineInputBorder())),
-                const SizedBox(height: 12),
-                TextField(controller: tDesc, decoration: InputDecoration(labelText: AppLocalizations.tr('task_description'), border: const OutlineInputBorder()), maxLines: 3),
-              ],
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(controller: tTitle, decoration: InputDecoration(labelText: AppLocalizations.tr('task_title'), border: const OutlineInputBorder())),
+                  const SizedBox(height: 12),
+                  TextField(controller: tDesc, decoration: InputDecoration(labelText: AppLocalizations.tr('task_description'), border: const OutlineInputBorder()), maxLines: 3),
+                  if (task.status == 'completed' || task.notes.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    TextField(controller: tNotes, decoration: InputDecoration(labelText: AppLocalizations.tr('task_notes_report'), border: const OutlineInputBorder()), maxLines: 3),
+                  ]
+                ],
+              ),
             ),
             actions: [
               TextButton(onPressed: isSaving ? null : () => Navigator.pop(ctx), child: Text(AppLocalizations.tr('cancel'))),
@@ -570,7 +577,12 @@ class _AdminTaskManagerScreenState extends State<AdminTaskManagerScreen> {
                         if (tTitle.text.trim().isEmpty) return;
                         setStateDialog(() => isSaving = true);
                         try {
-                          await ApiService().editTask(task.id, tTitle.text.trim(), tDesc.text.trim());
+                          await ApiService().editTask(
+                            task.id, 
+                            tTitle.text.trim(), 
+                            tDesc.text.trim(),
+                            notes: tNotes.text.trim(),
+                          );
                           if (!ctx.mounted || !mounted) return;
                           Navigator.pop(ctx);
                           _loadTasks();

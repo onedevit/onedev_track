@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-// ignore: avoid_web_libraries_in_flutter
+// ignore: avoid_web_libraries_in_flutter, deprecated_member_use
 import 'dart:html' as html;
+
+import 'dart:ui' as ui;
+import 'dart:ui_web' as ui_web;
 
 import '../models/data_models.dart';
 import '../services/api_service.dart';
@@ -24,7 +27,31 @@ class _ClientDashboardState extends State<ClientDashboard> {
   @override
   void initState() {
     super.initState();
+    _injectWebRtlFix();
     _loadData();
+  }
+
+  // حقن كود CSS يمنع انحراف إحداثيات الـ Iframe عند اختيار العربية (RTL)
+  void _injectWebRtlFix() {
+    if (!kIsWeb) return;
+    const String styleId = 'flt-platform-view-rtl-fix';
+    if (html.document.getElementById(styleId) == null) {
+      final style = html.StyleElement()
+        ..id = styleId
+        ..innerHtml = '''
+          flt-glass-pane,
+          flt-scene-host,
+          flt-platform-views-host,
+          flt-platform-view,
+          flt-platform-view-slot {
+            direction: ltr !important;
+            left: 0 !important;
+            right: auto !important;
+            text-align: left !important;
+          }
+        ''';
+      html.document.head?.append(style);
+    }
   }
 
   void _loadData() async {
@@ -141,7 +168,7 @@ class _ClientDashboardState extends State<ClientDashboard> {
 
         ValueListenableBuilder<ThemeMode>(
           valueListenable: themeNotifier,
-          builder: (_, mode, __) {
+          builder: (_, mode, _) {
             return IconButton(
               icon: Icon(mode == ThemeMode.light ? Icons.dark_mode_outlined : Icons.light_mode_outlined, 
                   color: isDark ? Colors.amber : const Color(0xFF1E293B)),
@@ -159,7 +186,7 @@ class _ClientDashboardState extends State<ClientDashboard> {
           tooltip: AppLocalizations.tr('logout'),
           onPressed: () async {
             await ApiService().logout();
-            if(!context.mounted) return;
+            if (!mounted) return;
             Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginScreen()));
           }
         ),
@@ -185,9 +212,12 @@ class _ClientDashboardState extends State<ClientDashboard> {
               _buildHeroHeader(project, isDark, isMobile),
               const SizedBox(height: 24),
               
-              // 2. قسم طلب الموافقة / الرفض
+              // 2. قسم طلب الموافقة / الرفض المبدئي الخطة
               _buildApprovalBanner(project, isDark, isMobile),
               const SizedBox(height: 24),
+
+              // 2.5 قسم المصادقة النهائية على استلام وتسليم المشروع عند اكتمال الإنجاز 100%
+              _buildFinalHandoverBanner(project, isDark, isMobile),
               
               // 3. بطاقات الإحصائيات الذكية
               _buildStatsSection(project, isDark, isMobile, isTablet),
@@ -526,6 +556,263 @@ class _ClientDashboardState extends State<ClientDashboard> {
         ),
       );
     }
+  }
+
+  // 2.5 قسم المصادقة النهائية على استلام وتسليم المشروع عند اكتمال الإنجاز 100%
+  Widget _buildFinalHandoverBanner(Project project, bool isDark, bool isMobile) {
+    if (project.progress < 0.99) return const SizedBox.shrink();
+
+    final String? formattedFinalDate = project.finalApprovalDate != null
+        ? DateFormat('yyyy-MM-dd HH:mm').format(project.finalApprovalDate!)
+        : null;
+
+    if (project.finalApprovalStatus == 'approved') {
+      return Container(
+        width: double.infinity,
+        margin: const EdgeInsets.only(bottom: 24),
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF10B981).withValues(alpha: 0.15) : const Color(0xFFD1FAE5),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFF10B981), width: 1.5),
+          boxShadow: [
+            BoxShadow(color: const Color(0xFF10B981).withValues(alpha: 0.15), blurRadius: 20, offset: const Offset(0, 8))
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.workspace_premium_rounded, color: Color(0xFF10B981), size: 32),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Text(
+                    AppLocalizations.tr('final_handover_approved_banner'),
+                    style: TextStyle(color: isDark ? const Color(0xFF34D399) : const Color(0xFF065F46), fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                ),
+              ],
+            ),
+            if (formattedFinalDate != null) ...[
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  const Icon(Icons.access_time_rounded, size: 14, color: Color(0xFF10B981)),
+                  const SizedBox(width: 6),
+                  Text(
+                    '${AppLocalizations.tr('decision_date')}: $formattedFinalDate',
+                    style: TextStyle(color: isDark ? const Color(0xFF34D399) : const Color(0xFF065F46), fontSize: 12, fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
+            ],
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: () => AppLocalizations.printHandoverCertificate(project),
+              icon: const Icon(Icons.print_rounded),
+              label: const Text('🖨️ طباعة وثيقة الاستلام النهائي والشهادة الرسمية'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF2563EB),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ],
+        ),
+      );
+    } else if (project.finalApprovalStatus == 'rejected') {
+      return Container(
+        width: double.infinity,
+        margin: const EdgeInsets.only(bottom: 24),
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFFEF4444).withValues(alpha: 0.15) : const Color(0xFFFEE2E2),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFEF4444), width: 1.5),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.assignment_return_rounded, color: Color(0xFFEF4444), size: 32),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Text(
+                    AppLocalizations.tr('final_handover_rejected_banner'),
+                    style: TextStyle(color: isDark ? const Color(0xFFFCA5A5) : const Color(0xFF991B1B), fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                ),
+              ],
+            ),
+            if (formattedFinalDate != null) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  const Icon(Icons.access_time_rounded, size: 14, color: Color(0xFFEF4444)),
+                  const SizedBox(width: 6),
+                  Text(
+                    '${AppLocalizations.tr('decision_date')}: $formattedFinalDate',
+                    style: TextStyle(color: isDark ? const Color(0xFFFCA5A5) : const Color(0xFF991B1B), fontSize: 12, fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
+            ],
+            if (project.finalApprovalNotes != null && project.finalApprovalNotes!.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.black26 : Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: isDark ? Colors.grey.shade800 : Colors.grey.shade200),
+                ),
+                child: Text('${project.finalApprovalNotes}', style: TextStyle(color: isDark ? const Color(0xFFFCA5A5) : const Color(0xFF991B1B), fontSize: 13)),
+              )
+            ]
+          ],
+        ),
+      );
+    } else {
+      return Container(
+        width: double.infinity,
+        margin: const EdgeInsets.only(bottom: 24),
+        padding: EdgeInsets.all(isMobile ? 18 : 24),
+        decoration: BoxDecoration(
+          color: isDark ? Colors.amber.withValues(alpha: 0.15) : const Color(0xFFFEF3C7),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFF59E0B), width: 1.5),
+          boxShadow: [
+            BoxShadow(color: Colors.amber.withValues(alpha: 0.15), blurRadius: 20, offset: const Offset(0, 8))
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.emoji_events_rounded, color: Color(0xFFD97706), size: 32),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Text(
+                    AppLocalizations.tr('final_handover_pending_banner'),
+                    style: TextStyle(color: isDark ? const Color(0xFFFBBF24) : const Color(0xFF92400E), fontWeight: FontWeight.bold, fontSize: isMobile ? 14 : 16),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            isMobile
+                ? Column(
+                    children: [
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: () => _submitFinalApproval(project, 'approved'),
+                          icon: const Icon(Icons.verified_rounded),
+                          label: Text(AppLocalizations.tr('confirm_final_approval')),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF10B981),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () => _showFinalRejectDialog(project),
+                          icon: const Icon(Icons.edit_note_rounded),
+                          label: Text(AppLocalizations.tr('reject_final_approval')),
+                          style: ElevatedButton.styleFrom(
+                            foregroundColor: const Color(0xFFEF4444),
+                            side: const BorderSide(color: Color(0xFFEF4444)),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        ),
+                      ),
+                    ],
+                  )
+                : Row(
+                    children: [
+                      ElevatedButton.icon(
+                        onPressed: () => _submitFinalApproval(project, 'approved'),
+                        icon: const Icon(Icons.verified_rounded),
+                        label: Text(AppLocalizations.tr('confirm_final_approval')),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF10B981),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      OutlinedButton.icon(
+                        onPressed: () => _showFinalRejectDialog(project),
+                        icon: const Icon(Icons.edit_note_rounded),
+                        label: Text(AppLocalizations.tr('reject_final_approval')),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFFEF4444),
+                          side: const BorderSide(color: Color(0xFFEF4444)),
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                      ),
+                    ],
+                  ),
+          ],
+        ),
+      );
+    }
+  }
+
+  void _submitFinalApproval(Project project, String status, {String? notes}) async {
+    setState(() => _loading = true);
+    try {
+      await ApiService().updateFinalApprovalStatus(project.id, status, notes: notes);
+      if (!mounted) return;
+      _loadData();
+    } catch (e) {
+      setState(() => _loading = false);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.tr('error'))));
+    }
+  }
+
+  void _showFinalRejectDialog(Project project) {
+    final notesCtrl = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(AppLocalizations.tr('reject_final_approval')),
+        content: TextField(
+          controller: notesCtrl,
+          decoration: InputDecoration(
+            labelText: AppLocalizations.tr('final_rejection_reason_label'),
+            border: const OutlineInputBorder(),
+          ),
+          maxLines: 4,
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppLocalizations.tr('cancel'))),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFEF4444), foregroundColor: Colors.white),
+            onPressed: () {
+              if (notesCtrl.text.trim().isEmpty) return;
+              Navigator.pop(ctx);
+              _submitFinalApproval(project, 'rejected', notes: notesCtrl.text.trim());
+            },
+            child: Text(AppLocalizations.tr('confirm_rejection')),
+          )
+        ],
+      ),
+    );
   }
 
   // 3. بطاقات الإحصائيات الذكية
@@ -877,9 +1164,70 @@ class _ClientDashboardState extends State<ClientDashboard> {
     );
   }
 
-  // 5. عرض ناتيف وفخم لمواصفات وتفاصيل المشروع بدون أي IFrames إطلاقاً
+// 5. معاينة تفاصيل المشروع الناتيف (Native Flutter Rendering)
   Widget _buildProjectPreviewSection(Project project, bool isDark, bool isMobile) {
     if (project.description.trim().isEmpty) return const SizedBox.shrink();
+
+    // ربط معرف العرض باللغة لضمان إعادة الرسم النظيف عند التبديل
+    final String currentLang = AppLocalizations.currentLanguage;
+    final String viewId = 'iframe-${project.id}-$currentLang';
+
+    // تنظيف القيود الثابتة
+    String fullHtmlContent = project.description;
+    fullHtmlContent = fullHtmlContent.replaceAll(RegExp(r'max-width:\s*\d+px\s*;?'), '');
+    fullHtmlContent = fullHtmlContent.replaceAll(RegExp(r'border-radius:\s*\d+px\s*;?'), '');
+
+    // CSS محكم بدون 100vw وبدون تكرار وسوم غير صالحة
+    const String cleanCssRules = '''
+      html, body {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        box-sizing: border-box !important;
+        overflow-x: hidden !important;
+        background-color: transparent !important;
+      }
+      .wrapper, .container, main, body > div {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border-radius: 0 !important;
+        border: none !important;
+        box-shadow: none !important;
+      }
+    ''';
+
+    if (fullHtmlContent.contains('</head>')) {
+      fullHtmlContent = fullHtmlContent.replaceFirst('</head>', '<style>$cleanCssRules</style></head>');
+    } else if (fullHtmlContent.contains('<body>')) {
+      fullHtmlContent = fullHtmlContent.replaceFirst('<body>', '<style>$cleanCssRules</style><body>');
+    } else {
+      fullHtmlContent = '<style>$cleanCssRules</style>$fullHtmlContent';
+    }
+
+    if (kIsWeb) {
+      try {
+        ui_web.platformViewRegistry.registerViewFactory(viewId, (int id) {
+          final html.IFrameElement iframe = html.IFrameElement()
+            ..style.border = 'none'
+            ..style.margin = '0'
+            ..style.padding = '0'
+            ..style.width = '100%'
+            ..style.height = '100%'
+            ..style.display = 'block'
+          // تدوير الحواف السفلية من داخل الـ iframe مباشرة لتفادي مشاكل ClipRRect
+            ..style.borderRadius = '0 0 22px 22px'
+            ..srcdoc = fullHtmlContent;
+
+          return iframe;
+        });
+      } catch (_) {
+        // تجاهل الخطأ في حال كان المعرف مسجلاً مسبقاً
+      }
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -895,249 +1243,113 @@ class _ClientDashboardState extends State<ClientDashboard> {
               child: const Icon(Icons.preview_rounded, color: Colors.purple, size: 20),
             ),
             const SizedBox(width: 12),
-            Text(AppLocalizations.tr('project_details'), 
-              style: TextStyle(fontSize: isMobile ? 20 : 24, fontWeight: FontWeight.bold, color: isDark ? Colors.white : const Color(0xFF0F172A))
+            Text(
+              AppLocalizations.tr('project_details'),
+              style: TextStyle(
+                fontSize: isMobile ? 20 : 24,
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : const Color(0xFF0F172A),
+              ),
             ),
           ],
         ),
         const SizedBox(height: 20),
 
-        // بطاقة ملخص الموافقة والمواصفات مع خيار الفتح بملء الشاشة
-        Container(
-          width: double.infinity,
-          padding: EdgeInsets.all(isMobile ? 20 : 32),
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1E293B) : Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.purple.withValues(alpha: isDark ? 0.15 : 0.05),
-                blurRadius: 25,
-                offset: const Offset(0, 10),
-              )
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.purple.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.purple.withValues(alpha: 0.3)),
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.verified_user_rounded, color: Colors.purple, size: 16),
-                        SizedBox(width: 8),
-                        Text('وثيقة التقرير والمواصفات الفنية المعتمدة', style: TextStyle(color: Colors.purple, fontWeight: FontWeight.bold, fontSize: 12)),
-                      ],
+        // تغليف كامل نافذة العرض بنظام LTR لعزل محرك الويب عن انقلاب الاتجاه
+        Directionality(
+          textDirection: ui.TextDirection.ltr,
+          child: Container(
+            height: isMobile ? 450 : 650,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF0F172A) : Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1),
+                width: 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.08),
+                  blurRadius: 30,
+                  offset: const Offset(0, 12),
+                )
+              ],
+            ),
+            child: Column(
+              children: [
+                // شريط عنوان المتصفح (Mac OS Bar)
+                Container(
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
+                    border: Border(
+                      bottom: BorderSide(
+                        color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                      ),
                     ),
                   ),
-                  const Spacer(),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Row(
-                      children: [
-                        Icon(Icons.lock_rounded, size: 12, color: Colors.green),
-                        SizedBox(width: 6),
-                        Text('secure-preview.local', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-
-              Text(
-                project.title,
-                style: TextStyle(fontSize: isMobile ? 20 : 26, fontWeight: FontWeight.bold, color: isDark ? Colors.white : const Color(0xFF0F172A)),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'يمكنك استعراض تفاصيل العرض والتقرير التفاعلي والمواصفات المعتمدة كاملة بملء الشاشة أو قراءتها مباشرة.',
-                style: TextStyle(fontSize: 14, color: isDark ? Colors.grey.shade400 : Colors.grey.shade600, height: 1.5),
-              ),
-              const SizedBox(height: 24),
-
-              // عرض ناتيف نظيف لأجسام النص البرمجي
-              _buildNativeHtmlViewer(project.description, isDark, isMobile),
-
-              const SizedBox(height: 24),
-
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () => _openFullscreenPreview(project),
-                  icon: const Icon(Icons.open_in_new_rounded),
-                  label: const Text('فتح التقرير والتفاصيل الكاملة في نافذة جديدة'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2563EB),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 18),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                    elevation: 2,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    children: [
+                      Row(
+                        children: [
+                          CircleAvatar(radius: 6, backgroundColor: Colors.red.shade400),
+                          const SizedBox(width: 8),
+                          CircleAvatar(radius: 6, backgroundColor: Colors.amber.shade400),
+                          const SizedBox(width: 8),
+                          CircleAvatar(radius: 6, backgroundColor: Colors.green.shade400),
+                        ],
+                      ),
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF0F172A) : Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.lock_rounded,
+                              size: 12,
+                              color: isDark ? Colors.green.shade400 : Colors.green,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'secure-preview.local',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: isDark ? Colors.grey.shade400 : Colors.grey.shade700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Spacer(),
+                      const SizedBox(width: 52),
+                    ],
                   ),
                 ),
-              ),
-            ],
+
+                // إزالة ClipRRect نهائياً واستبداله بحاوية مباشرة تأخذ مفتاحاً مرتبطاً باللغة
+                Expanded(
+                  child: HtmlElementView(
+                    key: ValueKey(viewId),
+                    viewType: viewId,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
         const SizedBox(height: 40),
       ],
     );
-  }
-
-  // بناء عرض ناتيف فخم وأنيق للنصوص والفقرات والبطاقات المضمنة بدون أي IFrames إطلاقاً
-  Widget _buildNativeHtmlViewer(String rawHtml, bool isDark, bool isMobile) {
-    if (rawHtml.trim().isEmpty) return const SizedBox.shrink();
-
-    // تنظيف وجمع الفقرات والعناوين بنمط ناتيف فخم
-    String cleanText = rawHtml
-        .replaceAll(RegExp(r'<script[\s\S]*?<\/script>'), '')
-        .replaceAll(RegExp(r'<style[\s\S]*?<\/style>'), '');
-
-    List<Widget> parsedWidgets = [];
-    final blockRegex = RegExp(r'<(h[1-6]|p|li|td)[^>]*>([\s\S]*?)<\/\1>', caseSensitive: false);
-    final matches = blockRegex.allMatches(cleanText);
-
-    if (matches.isNotEmpty) {
-      for (final match in matches) {
-        final tag = match.group(1)?.toLowerCase() ?? '';
-        final content = match.group(2) ?? '';
-        final fullTag = match.group(0) ?? '';
-
-        final textContent = content.replaceAll(RegExp(r'<[^>]*>'), '').trim();
-        if (textContent.isEmpty || textContent.length < 3) continue;
-
-        if (tag.startsWith('h')) {
-          parsedWidgets.add(
-            Padding(
-              padding: const EdgeInsets.only(top: 18, bottom: 8),
-              child: Row(
-                children: [
-                  Container(
-                    width: 4, 
-                    height: 18, 
-                    decoration: BoxDecoration(
-                      color: Colors.blue,
-                      borderRadius: BorderRadius.circular(2)
-                    ),
-                    margin: const EdgeInsets.only(left: 8, right: 8)
-                  ),
-                  Expanded(
-                    child: Text(
-                      textContent,
-                      style: TextStyle(
-                        fontSize: tag == 'h1' ? 20 : (tag == 'h2' ? 17 : 15),
-                        fontWeight: FontWeight.bold,
-                        color: isDark ? Colors.white : const Color(0xFF0F172A),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        } else if (fullTag.contains('critical') || fullTag.contains('danger') || fullTag.contains('red') || textContent.contains('حرج') || textContent.contains('عاجل')) {
-          parsedWidgets.add(
-            Container(
-              margin: const EdgeInsets.only(bottom: 10),
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: isDark ? Colors.red.withValues(alpha: 0.1) : const Color(0xFFFEF2F2),
-                borderRadius: BorderRadius.circular(12),
-                border: Border(right: BorderSide(color: Colors.red.shade400, width: 4)),
-              ),
-              child: Text(textContent, style: TextStyle(color: isDark ? const Color(0xFFFCA5A5) : const Color(0xFF991B1B), fontSize: 13, height: 1.5, fontWeight: FontWeight.w600)),
-            ),
-          );
-        } else if (fullTag.contains('warn') || fullTag.contains('orange') || textContent.contains('تنبيه') || textContent.contains('تحذير')) {
-          parsedWidgets.add(
-            Container(
-              margin: const EdgeInsets.only(bottom: 10),
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: isDark ? Colors.amber.withValues(alpha: 0.1) : const Color(0xFFFFFBEB),
-                borderRadius: BorderRadius.circular(12),
-                border: Border(right: BorderSide(color: Colors.amber.shade700, width: 4)),
-              ),
-              child: Text(textContent, style: TextStyle(color: isDark ? const Color(0xFFFBBF24) : const Color(0xFF92400E), fontSize: 13, height: 1.5, fontWeight: FontWeight.w600)),
-            ),
-          );
-        } else {
-          parsedWidgets.add(
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Text(
-                textContent,
-                style: TextStyle(
-                  fontSize: 13.5,
-                  height: 1.6,
-                  color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF334155),
-                ),
-              ),
-            ),
-          );
-        }
-      }
-    }
-
-    if (parsedWidgets.isEmpty) {
-      final plainText = cleanText.replaceAll(RegExp(r'<[^>]*>'), '\n').trim();
-      final lines = plainText.split('\n').where((l) => l.trim().length > 3).toList();
-
-      for (var line in lines) {
-        parsedWidgets.add(
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Text(
-              line.trim(),
-              style: TextStyle(
-                fontSize: 13.5,
-                height: 1.6,
-                color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF334155),
-              ),
-            ),
-          ),
-        );
-      }
-    }
-
-    return Container(
-      width: double.infinity,
-      constraints: const BoxConstraints(maxHeight: 350),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
-      ),
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: parsedWidgets,
-        ),
-      ),
-    );
-  }
-
-  // فتح العرض التفاعلي بملء الشاشة بتبويب جديد
-  void _openFullscreenPreview(Project project) {
-    if (kIsWeb) {
-      final blob = html.Blob([project.description], 'text/html');
-      final url = html.Url.createObjectUrlFromBlob(blob);
-      html.window.open(url, '_blank');
-    }
   }
 
   Widget _buildEmptyState(bool isDark) {

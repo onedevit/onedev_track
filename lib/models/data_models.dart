@@ -46,9 +46,12 @@ class Project {
   final DateTime deadline;
   final int totalTasks;
   final int completedTasks;
-  final String approvalStatus; // حالة الموافقة
+  final String approvalStatus; // حالة الموافقة المبدئية
   final String? rejectionReason; // سبب الرفض
-  final DateTime? clientApprovalDate; // تاريخ ووقت رد الحريف (الموافقة أو الرفض)
+  final DateTime? clientApprovalDate; // تاريخ ووقت رد الحريف (الموافقة أو الرفض المبدئي)
+  final String finalApprovalStatus; // حالة المصادقة النهائية على التسليم الإنجاز 100%
+  final String? finalApprovalNotes; // ملاحظات عدم المصادقة أو استلام الإنجاز
+  final DateTime? finalApprovalDate; // تاريخ المصادقة النهائية
   final List<Task> tasks; // هذه القائمة ستحتوي فقط على "المهام الرئيسية" وجذور الشجرة
 
   Project({
@@ -65,6 +68,9 @@ class Project {
     this.approvalStatus = 'pending',
     this.rejectionReason,
     this.clientApprovalDate,
+    this.finalApprovalStatus = 'pending',
+    this.finalApprovalNotes,
+    this.finalApprovalDate,
     this.tasks = const [],
   });
 
@@ -111,6 +117,9 @@ class Project {
       approvalStatus: json['client_approval_status'] ?? 'pending',
       rejectionReason: json['client_rejection_reason'],
       clientApprovalDate: json['client_approval_date'] != null ? DateTime.parse(json['client_approval_date']) : null,
+      finalApprovalStatus: json['final_approval_status'] ?? 'pending',
+      finalApprovalNotes: json['final_approval_notes'],
+      finalApprovalDate: json['final_approval_date'] != null ? DateTime.parse(json['final_approval_date']) : null,
       tasks: rootTasks,
     );
   }

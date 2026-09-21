@@ -191,6 +191,30 @@ class ApiService {
     if (res.statusCode != 200) throw Exception('Error updating approval status');
   }
 
+  // [CLIENT] تحديث حالة المصادقة النهائية على استلام إنجاز المشروع (100% completed)
+  Future<void> updateFinalApprovalStatus(int projectId, String status, {String? notes}) async {
+    final res = await http.post(
+      Uri.parse('$baseUrl/client/update_final_approval.php'),
+      headers: await getHeaders(),
+      body: jsonEncode({
+        'project_id': projectId,
+        'status': status,
+        'notes': notes ?? '',
+      }),
+    );
+    if (res.statusCode != 200) throw Exception('Error updating final approval status');
+  }
+
+  // [ADMIN] إعادة تعيين/إلغاء المصادقة النهائية على استلام المشروع (في حال وجود خطأ)
+  Future<void> resetFinalApprovalStatus(int projectId) async {
+    final res = await http.post(
+      Uri.parse('$baseUrl/admin/reset_final_approval.php'),
+      headers: await getHeaders(),
+      body: jsonEncode({'project_id': projectId}),
+    );
+    if (res.statusCode != 200) throw Exception('Error resetting final approval');
+  }
+
   // [ADMIN] Récupérer les tâches d'un projet spécifique
   Future<List<dynamic>> getTasks(int projectId) async {
     final res = await http.get(Uri.parse('$baseUrl/admin/tasks.php?project_id=$projectId'), headers: await getHeaders());
@@ -213,12 +237,20 @@ class ApiService {
     if (res.statusCode != 200) throw Exception('Error creating task');
   }
 
-  // [ADMIN] تعديل مهمة
-  Future<void> editTask(int taskId, String title, String desc) async {
+  // [ADMIN] تعديل مهمة (العنوان، الوصف، والملاحظات/التقرير)
+  Future<void> editTask(int taskId, String title, String desc, {String? notes}) async {
+    final bodyData = <String, dynamic>{
+      'task_id': taskId, 
+      'title': title, 
+      'description': desc,
+    };
+    if (notes != null) {
+      bodyData['notes'] = notes;
+    }
     final res = await http.post(
       Uri.parse('$baseUrl/admin/edit_task.php'),
       headers: await getHeaders(),
-      body: jsonEncode({'task_id': taskId, 'title': title, 'description': desc}),
+      body: jsonEncode(bodyData),
     );
     if (res.statusCode != 200) throw Exception('Error editing task');
   }

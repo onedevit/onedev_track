@@ -11,11 +11,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $data = json_decode(file_get_contents("php://input"));
 
     if(!empty($data->task_id) && !empty($data->title)) {
-
-        $query = "UPDATE tasks SET title = :title, description = :description WHERE id = :id";
-        $stmt = $db->prepare($query);
-        $stmt->bindParam(':title', $data->title);
+        $title = $data->title;
         $desc = isset($data->description) ? $data->description : '';
+        $notes = isset($data->notes) ? $data->notes : null;
+
+        if ($notes !== null) {
+            $query = "UPDATE tasks SET title = :title, description = :description, notes = :notes WHERE id = :id";
+            $stmt = $db->prepare($query);
+            $stmt->bindParam(':notes', $notes);
+        } else {
+            $query = "UPDATE tasks SET title = :title, description = :description WHERE id = :id";
+            $stmt = $db->prepare($query);
+        }
+
+        $stmt->bindParam(':title', $title);
         $stmt->bindParam(':description', $desc);
         $stmt->bindParam(':id', $data->task_id);
 

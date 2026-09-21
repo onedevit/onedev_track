@@ -168,7 +168,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           tooltip: AppLocalizations.tr('logout'),
           onPressed: () async {
             await ApiService().logout();
-            if(!context.mounted) return;
+            if (!mounted) return;
             Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginScreen()));
           }
         ),
@@ -216,16 +216,20 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  // 1. بطاقات الإحصائيات السريعة
+  // 1. بطاقات الإحصائيات السريعة الشاملة
   Widget _buildKpiOverview(bool isDark, bool isMobile, bool isTablet) {
     final int pendingCount = _projects.where((p) => p.approvalStatus == 'pending').length;
     final int rejectedCount = _projects.where((p) => p.approvalStatus == 'rejected').length;
+    final int finalApprovedCount = _projects.where((p) => p.finalApprovalStatus == 'approved').length;
+    final int finalRejectedCount = _projects.where((p) => p.finalApprovalStatus == 'rejected').length;
 
     final cards = [
       _buildKpiCard(AppLocalizations.tr('total_projects'), '${_projects.length}', Icons.folder_copy_rounded, const Color(0xFF3B82F6), isDark),
       _buildKpiCard(AppLocalizations.tr('total_clients'), '${_clients.length}', Icons.group_rounded, const Color(0xFF8B5CF6), isDark),
       _buildKpiCard(AppLocalizations.tr('pending_approval'), '$pendingCount', Icons.hourglass_top_rounded, const Color(0xFFF59E0B), isDark),
       _buildKpiCard(AppLocalizations.tr('rejected_feedback'), '$rejectedCount', Icons.warning_amber_rounded, const Color(0xFFEF4444), isDark),
+      _buildKpiCard(AppLocalizations.tr('final_approved_kpi'), '$finalApprovedCount', Icons.workspace_premium_rounded, const Color(0xFF10B981), isDark),
+      _buildKpiCard(AppLocalizations.tr('final_rejected_kpi'), '$finalRejectedCount', Icons.assignment_return_rounded, const Color(0xFFEC4899), isDark),
     ];
 
     if (isMobile) {
@@ -242,15 +246,21 @@ class _AdminDashboardState extends State<AdminDashboard> {
       return GridView.count(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
-        crossAxisCount: 2,
+        crossAxisCount: 3,
         crossAxisSpacing: 16,
         mainAxisSpacing: 16,
         childAspectRatio: 2.2,
         children: cards,
       );
     } else {
-      return Row(
-        children: cards.map((c) => Expanded(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 6), child: c))).toList(),
+      return GridView.count(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        crossAxisCount: 3,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
+        childAspectRatio: 2.6,
+        children: cards,
       );
     }
   }
@@ -489,6 +499,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 ),
               ],
 
+              // إذا كانت نسبة الإنجاز 100%، نعرض حالة المصادقة النهائية المباشرة للعميل
+              if (p.progress >= 0.99) ...[
+                const SizedBox(height: 12),
+                _buildFinalApprovalStatusBadge(p, isDark),
+              ],
+
               const SizedBox(height: 20),
 
               Row(
@@ -561,6 +577,96 @@ class _AdminDashboardState extends State<AdminDashboard> {
         border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Text(AppLocalizations.tr(textKey), style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.bold)),
+    );
+  }
+
+  // شارة وقسم المصادقة النهائية على التسليم الإنجاز 100%
+  Widget _buildFinalApprovalStatusBadge(Project p, bool isDark) {
+    Color color;
+    String statusText;
+    IconData icon;
+
+    if (p.finalApprovalStatus == 'approved') {
+      color = const Color(0xFF10B981);
+      statusText = 'مصادقة نهائية على الاستلام 🏆';
+      icon = Icons.verified_rounded;
+    } else if (p.finalApprovalStatus == 'rejected') {
+      color = const Color(0xFFEF4444);
+      statusText = 'ملاحظات عدم مصادقة على الاستلام ⚠️';
+      icon = Icons.warning_amber_rounded;
+    } else {
+      color = const Color(0xFFF59E0B);
+      statusText = 'بانتظار مصادقة العميل على الاستلام ⏳';
+      icon = Icons.hourglass_top_rounded;
+    }
+
+    final String? formattedDate = p.finalApprovalDate != null 
+        ? DateFormat('yyyy-MM-dd HH:mm').format(p.finalApprovalDate!) 
+        : null;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: color, size: 18),
+              const SizedBox(width: 8),
+              Text(statusText, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 13)),
+              if (formattedDate != null) ...[
+                const Spacer(),
+                Text(formattedDate, style: TextStyle(color: color, fontSize: 11)),
+              ]
+            ],
+          ),
+          if (p.finalApprovalStatus == 'rejected' && p.finalApprovalNotes != null && p.finalApprovalNotes!.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              'ملاحظات الحريف: ${p.finalApprovalNotes}',
+              style: TextStyle(color: isDark ? const Color(0xFFFCA5A5) : const Color(0xFF991B1B), fontSize: 12, fontWeight: FontWeight.w500),
+            ),
+          ],
+          if (p.finalApprovalStatus != 'pending') ...[
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                if (p.finalApprovalStatus == 'approved') ...[
+                  OutlinedButton.icon(
+                    onPressed: () => AppLocalizations.printHandoverCertificate(p),
+                    icon: const Icon(Icons.print_rounded, size: 16),
+                    label: const Text('🖨️ طباعة شهادة الاستلام'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF10B981),
+                      side: const BorderSide(color: Color(0xFF10B981)),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                OutlinedButton.icon(
+                  onPressed: () => _confirmResetFinalApproval(p),
+                  icon: const Icon(Icons.restart_alt_rounded, size: 16),
+                  label: Text(AppLocalizations.tr('reset_final_approval')),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFFF59E0B),
+                    side: const BorderSide(color: Color(0xFFF59E0B)),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
     );
   }
 
@@ -886,6 +992,34 @@ class _AdminDashboardState extends State<AdminDashboard> {
         child: Text(c.username, style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.white : const Color(0xFF0F172A))),
       )).toList(),
       onChanged: onChanged,
+    );
+  }
+
+  void _confirmResetFinalApproval(Project project) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(AppLocalizations.tr('reset_final_approval')),
+        content: Text(AppLocalizations.tr('confirm_reset_final_approval')),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppLocalizations.tr('cancel'))),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFF59E0B), foregroundColor: Colors.white),
+            onPressed: () async {
+              try {
+                await ApiService().resetFinalApprovalStatus(project.id);
+                if (!ctx.mounted || !mounted) return;
+                Navigator.pop(ctx);
+                _fetchData();
+              } catch (e) {
+                if (!ctx.mounted) return;
+                ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text(AppLocalizations.tr('error'))));
+              }
+            },
+            child: Text(AppLocalizations.tr('confirm')),
+          )
+        ],
+      ),
     );
   }
 

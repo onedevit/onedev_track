@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+// ignore: avoid_web_libraries_in_flutter, deprecated_member_use
+import 'dart:html' as html;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../models/data_models.dart';
 import 'api_service.dart';
 
 class LocaleNotifier extends ValueNotifier<Locale> {
@@ -32,6 +36,8 @@ class LocaleNotifier extends ValueNotifier<Locale> {
 final localeNotifier = LocaleNotifier(const Locale('ar'));
 
 class AppLocalizations {
+  static String get currentLanguage => localeNotifier.currentLang;
+
   static const Map<String, Map<String, String>> _localizedValues = {
     'ar': {
       // General
@@ -88,6 +94,16 @@ class AppLocalizations {
       'rejection_reason_label': 'اذكر سبب الرفض أو التعديلات المطلوبة بكل دقة',
       'confirm_rejection': 'تأكيد وإرسال للإدارة',
       'decision_date': 'تاريخ وساعة القرار',
+      'final_handover_title': 'المصادقة على استلام وإكتمال المشروع 🏆',
+      'final_handover_approved_banner': 'تمت المصادقة النهائية على استلام وتسليم المشروع بنجاح! شكراً لتعاملكم معنا.',
+      'final_handover_rejected_banner': 'تم تقديم ملاحظات عدم المصادقة على الاستلام وجاري مراجعتها من قبل الإدارة.',
+      'final_handover_pending_banner': 'تهانينا! اكتملت جميع مهام المشروع بنسبة 100%. الرجاء المعاينة والمصادقة على الاستلام النهائي.',
+      'confirm_final_approval': 'مصادقة واستلام النهائي',
+      'reject_final_approval': 'عدم المصادقة / ملاحظات التسليم',
+      'final_rejection_reason_label': 'اذكر ملاحظاتك وأسباب عدم المصادقة النهائية بدقة',
+      'final_approval_status_label': 'حالة المصادقة النهائية',
+      'reset_final_approval': 'إعادة تعيين الاستلام النهائي 🔄',
+      'confirm_reset_final_approval': 'هل أنت متأكد من إلغاء وإعادة تعيين حالة الاستلام النهائي لهذا المشروع؟',
       'task_completed': 'مكتملة',
       'task_in_progress': 'قيد العمل',
       'completed_at_label': 'تاريخ ووقت الإنجاز',
@@ -98,6 +114,8 @@ class AppLocalizations {
       'total_clients': 'إجمالي الحرفاء',
       'pending_approval': 'بانتظار الموافقة',
       'rejected_feedback': 'مرفوضة / تعديلات',
+      'final_approved_kpi': 'مصادقة تسليم نهائي 🏆',
+      'final_rejected_kpi': 'ملاحظات استلام نهائي ⚠️',
       'new_project': 'مشروع جديد',
       'manage_clients': 'إدارة الحرفاء',
       'search_projects_clients': 'البحث باسم المشروع أو اسم العميل...',
@@ -208,6 +226,16 @@ class AppLocalizations {
       'rejection_reason_label': 'Please specify the reason for rejection or required changes',
       'confirm_rejection': 'Confirm & Send to Admin',
       'decision_date': 'Decision Date & Time',
+      'final_handover_title': 'Final Project Handover Sign-off 🏆',
+      'final_handover_approved_banner': 'Final project handover successfully approved! Thank you for your business.',
+      'final_handover_rejected_banner': 'Final handover revision notes submitted and currently under review by management.',
+      'final_handover_pending_banner': 'Congratulations! All project tasks are 100% completed. Please review and sign off on final handover.',
+      'confirm_final_approval': 'Sign off & Final Accept',
+      'reject_final_approval': 'Reject Handover / Notes',
+      'final_rejection_reason_label': 'Please state your notes & reasons for final handover rejection',
+      'final_approval_status_label': 'Final Handover Status',
+      'reset_final_approval': 'Reset Final Handover 🔄',
+      'confirm_reset_final_approval': 'Are you sure you want to cancel and reset the final handover status for this project?',
       'task_completed': 'Completed',
       'task_in_progress': 'In Progress',
       'no_active_projects': 'No active projects assigned to you currently.',
@@ -217,6 +245,8 @@ class AppLocalizations {
       'total_clients': 'Total Clients',
       'pending_approval': 'Pending Approval',
       'rejected_feedback': 'Rejected / Revisions',
+      'final_approved_kpi': 'Final Handover Approved 🏆',
+      'final_rejected_kpi': 'Final Handover Notes ⚠️',
       'new_project': 'New Project',
       'manage_clients': 'Manage Clients',
       'search_projects_clients': 'Search by project or client name...',
@@ -327,6 +357,16 @@ class AppLocalizations {
       'rejection_reason_label': 'Veuillez préciser la raison du refus ou les modifications requises',
       'confirm_rejection': 'Confirmer & Envoyer à l\'Admin',
       'decision_date': 'Date et Heure de Décision',
+      'final_handover_title': 'Validation Finale et Livraison du Projet 🏆',
+      'final_handover_approved_banner': 'Livraison finale du projet approuvée avec succès ! Merci de votre confiance.',
+      'final_handover_rejected_banner': 'Remarques de révision soumises et en cours d\'examen par la direction.',
+      'final_handover_pending_banner': 'Félicitations ! Toutes les tâches sont complétées à 100%. Veuillez examiner et valider la livraison finale.',
+      'confirm_final_approval': 'Valider la livraison finale',
+      'reject_final_approval': 'Refuser la livraison / Remarques',
+      'final_rejection_reason_label': 'Veuillez préciser vos remarques et motifs de refus final',
+      'final_approval_status_label': 'Statut de Livraison Finale',
+      'reset_final_approval': 'Réinitialiser Livraison Finale 🔄',
+      'confirm_reset_final_approval': 'Êtes-vous sûr de vouloir annuler et réinitialiser le statut de livraison finale pour ce projet ?',
       'task_completed': 'Terminée',
       'task_in_progress': 'En Cours',
       'no_active_projects': 'Aucun projet actif ne vous est attribué actuellement.',
@@ -336,6 +376,8 @@ class AppLocalizations {
       'total_clients': 'Total Clients',
       'pending_approval': 'En Attente de Validation',
       'rejected_feedback': 'Refusés / Révisions',
+      'final_approved_kpi': 'Livraison Finale Validée 🏆',
+      'final_rejected_kpi': 'Remarques Livraison Finale ⚠️',
       'new_project': 'Nouveau Projet',
       'manage_clients': 'Gérer les Clients',
       'search_projects_clients': 'Rechercher par nom de projet ou client...',
@@ -397,6 +439,334 @@ class AppLocalizations {
     final lang = localeNotifier.currentLang;
     return _localizedValues[lang]?[key] ?? _localizedValues['ar']?[key] ?? key;
   }
+
+  // طباعة شهادة ومحضر الاستلام النهائي للمشروع
+  static void printHandoverCertificate(Project project) {
+    if (kIsWeb) {
+      final certHtml = _generateHandoverReportHtml(project);
+      final blob = html.Blob([certHtml], 'text/html');
+      final url = html.Url.createObjectUrlFromBlob(blob);
+      html.window.open(url, '_blank');
+    }
+  }
+
+  static String _generateHandoverReportHtml(Project project) {
+    final String approvalDateStr = project.finalApprovalDate != null
+        ? project.finalApprovalDate.toString().split('.')[0]
+        : DateTime.now().toString().split('.')[0];
+
+    final String refId = 'PRJ-${project.id}-${project.clientId}';
+
+    String taskRows = '';
+    for (var task in project.tasks) {
+      taskRows += '''
+        <tr>
+          <td><strong>${task.title}</strong><br><span style="color:#64748b; font-size:12px;">${task.description}</span></td>
+          <td class="status">مكتملة ✓</td>
+        </tr>
+      ''';
+      for (var sub in task.subTasks) {
+        taskRows += '''
+          <tr>
+            <td style="padding-right: 30px;">↳ ${sub.title}</td>
+            <td class="status">مكتملة ✓</td>
+          </tr>
+        ''';
+      }
+    }
+
+    return '''<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>شهادة ومحضر استلام مشروع - ${project.title}</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap');
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Cairo', sans-serif;
+      background: #f8fafc;
+      color: #0f172a;
+      padding: 40px 20px;
+    }
+
+    .cert-card {
+      max-width: 850px;
+      margin: 0 auto;
+      background: #ffffff;
+      border-radius: 20px;
+      border: 2px solid #e2e8f0;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+      padding: 40px;
+      position: relative;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid #f1f5f9;
+      padding-bottom: 20px;
+      margin-bottom: 30px;
+    }
+
+    .logo-title {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .logo-icon {
+      font-size: 36px;
+    }
+
+    .title-text {
+      font-size: 24px;
+      font-weight: 800;
+      color: #0f172a;
+    }
+
+    .doc-badge {
+      background: #ecfdf5;
+      color: #047857;
+      border: 1px solid #a7f3d0;
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      background: #f8fafc;
+      padding: 20px;
+      border-radius: 14px;
+      border: 1px solid #e2e8f0;
+      margin-bottom: 30px;
+    }
+
+    .info-item {
+      font-size: 14px;
+    }
+
+    .info-label {
+      color: #64748b;
+      font-weight: 600;
+      font-size: 12px;
+    }
+
+    .info-val {
+      color: #0f172a;
+      font-weight: 700;
+      font-size: 15px;
+      margin-top: 2px;
+    }
+
+    .section-title {
+      font-size: 17px;
+      font-weight: 800;
+      color: #0f172a;
+      margin-bottom: 16px;
+      border-right: 4px solid #10b981;
+      padding-right: 10px;
+    }
+
+    .tasks-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 30px;
+    }
+
+    .tasks-table th, .tasks-table td {
+      padding: 10px 14px;
+      border: 1px solid #e2e8f0;
+      text-align: right;
+      font-size: 13px;
+    }
+
+    .tasks-table th {
+      background: #f1f5f9;
+      font-weight: 700;
+      color: #1e293b;
+    }
+
+    .tasks-table td.status {
+      color: #10b981;
+      font-weight: 700;
+    }
+
+    .stamp-section {
+      margin-top: 40px;
+      border-top: 2px dashed #cbd5e1;
+      padding-top: 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    .stamp-box {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      background: #f0fdf4;
+      border: 2px solid #86efac;
+      padding: 16px 24px;
+      border-radius: 16px;
+    }
+
+    .stamp-svg {
+      width: 70px;
+      height: 70px;
+    }
+
+    .stamp-text-title {
+      font-size: 17px;
+      font-weight: 800;
+      color: #065f46;
+    }
+
+    .stamp-text-sub {
+      font-size: 12px;
+      color: #047857;
+      margin-top: 2px;
+    }
+
+    .signatures {
+      display: flex;
+      gap: 40px;
+      text-align: center;
+      font-size: 13px;
+      color: #475569;
+    }
+
+    .sig-line {
+      margin-top: 30px;
+      border-top: 1px dashed #94a3b8;
+      width: 120px;
+    }
+
+    .no-print {
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .btn-print {
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 12px 28px;
+      border-radius: 10px;
+      font-family: inherit;
+      font-weight: 700;
+      font-size: 15px;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(37,99,235,0.3);
+    }
+
+    @media print {
+      body { padding: 0; background: white; }
+      .cert-card { border: none; box-shadow: none; padding: 20px; }
+      .no-print { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="no-print">
+    <button class="btn-print" onclick="window.print()">🖨️ طباعة الشهادة / تصدير PDF</button>
+  </div>
+
+  <div class="cert-card">
+    <div class="header">
+      <div class="logo-title">
+        <span class="logo-icon">🚀</span>
+        <div>
+          <div class="title-text">OneDev Track</div>
+          <div style="font-size:12px; color:#64748b;">محضر وشهادة استلام مشروع رسمي • المرجع: $refId</div>
+        </div>
+      </div>
+      <div class="doc-badge">مرخص ومعتمد ✓</div>
+    </div>
+
+    <div class="info-grid">
+      <div class="info-item">
+        <div class="info-label">اسم المشروع:</div>
+        <div class="info-val">${project.title}</div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">الحريف المالك:</div>
+        <div class="info-val">${project.clientName}</div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">تاريخ البدء والموعد النهائي:</div>
+        <div class="info-val">${project.startDate.toString().split(' ')[0]} &rarr; ${project.deadline.toString().split(' ')[0]}</div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">تاريخ وتوقيت الاستلام النهائي:</div>
+        <div class="info-val">$approvalDateStr</div>
+      </div>
+    </div>
+
+    <div class="section-title">محضر إنجاز وإكتمال كافة المهام (100%)</div>
+    <table class="tasks-table">
+      <thead>
+        <tr>
+          <th>اسم المهمة / العملية</th>
+          <th style="width: 100px;">الحالة</th>
+        </tr>
+      </thead>
+      <tbody>
+        $taskRows
+      </tbody>
+    </table>
+
+    <div class="stamp-section">
+      <div class="stamp-box">
+        <svg class="stamp-svg" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="10" y="10" width="80" height="60" rx="10" stroke="#1E293B" stroke-width="6" fill="none"/>
+          <rect x="35" y="22" width="30" height="8" rx="4" fill="#1E293B"/>
+          <line x1="25" y1="40" x2="75" y2="40" stroke="#1E293B" stroke-width="5" stroke-linecap="round"/>
+          <line x1="25" y1="52" x2="55" y2="52" stroke="#1E293B" stroke-width="5" stroke-linecap="round"/>
+          <circle cx="65" cy="65" r="20" fill="#10B981" stroke="#FFFFFF" stroke-width="4"/>
+          <path d="M65 53V77M53 65H77" stroke="#1E293B" stroke-width="6" stroke-linecap="round"/>
+          <path d="M52 82L45 95L58 90L65 95L58 82" fill="#10B981"/>
+          <path d="M78 82L85 95L72 90L65 95L72 82" fill="#10B981"/>
+        </svg>
+        <div>
+          <div class="stamp-text-title">تمت المصادقة والاستلام النهائي بنجاح</div>
+          <div class="stamp-text-sub">تم استلام المشروع كاملاً وبحالة تشغيلية ممتازة معتمدة</div>
+        </div>
+      </div>
+
+      <div class="signatures">
+        <div>
+          <div>توقيع ومصادقة العميل</div>
+          <div class="sig-line"></div>
+          <div style="font-size:11px; margin-top:4px;">${project.clientName}</div>
+        </div>
+        <div>
+          <div>إدارة التنفيذ والتعميد</div>
+          <div class="sig-line"></div>
+          <div style="font-size:11px; margin-top:4px;">OneDev IT Agency</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    window.onload = function() {
+      setTimeout(function() {
+        window.print();
+      }, 600);
+    };
+  </script>
+</body>
+</html>''';
+  }
 }
 
 // ودجت تغيير كلمة المرور المعاد استخدامها في الواجهتين
@@ -412,6 +782,9 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
   final _newPasswordCtrl = TextEditingController();
   final _confirmPasswordCtrl = TextEditingController();
   bool _isLoading = false;
+  bool _obscureOld = true;
+  bool _obscureNew = true;
+  bool _obscureConfirm = true;
 
   @override
   Widget build(BuildContext context) {
@@ -431,30 +804,42 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
             children: [
               TextField(
                 controller: _oldPasswordCtrl,
-                obscureText: true,
+                obscureText: _obscureOld,
                 decoration: InputDecoration(
                   labelText: AppLocalizations.tr('old_password'),
                   prefixIcon: const Icon(Icons.lock_outline_rounded),
+                  suffixIcon: IconButton(
+                    icon: Icon(_obscureOld ? Icons.visibility_off_rounded : Icons.visibility_rounded),
+                    onPressed: () => setState(() => _obscureOld = !_obscureOld),
+                  ),
                   border: const OutlineInputBorder(),
                 ),
               ),
               const SizedBox(height: 14),
               TextField(
                 controller: _newPasswordCtrl,
-                obscureText: true,
+                obscureText: _obscureNew,
                 decoration: InputDecoration(
                   labelText: AppLocalizations.tr('new_password'),
                   prefixIcon: const Icon(Icons.key_rounded),
+                  suffixIcon: IconButton(
+                    icon: Icon(_obscureNew ? Icons.visibility_off_rounded : Icons.visibility_rounded),
+                    onPressed: () => setState(() => _obscureNew = !_obscureNew),
+                  ),
                   border: const OutlineInputBorder(),
                 ),
               ),
               const SizedBox(height: 14),
               TextField(
                 controller: _confirmPasswordCtrl,
-                obscureText: true,
+                obscureText: _obscureConfirm,
                 decoration: InputDecoration(
                   labelText: AppLocalizations.tr('confirm_new_password'),
                   prefixIcon: const Icon(Icons.key_rounded),
+                  suffixIcon: IconButton(
+                    icon: Icon(_obscureConfirm ? Icons.visibility_off_rounded : Icons.visibility_rounded),
+                    onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
+                  ),
                   border: const OutlineInputBorder(),
                 ),
               ),
@@ -488,6 +873,8 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
                   }
 
                   setState(() => _isLoading = true);
+                  final messenger = ScaffoldMessenger.of(context);
+                  final navigator = Navigator.of(context);
                   try {
                     final api = ApiService();
                     await api.changePassword(
@@ -495,17 +882,17 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
                       _newPasswordCtrl.text.trim(),
                     );
                     if (!mounted) return;
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    navigator.pop();
+                    messenger.showSnackBar(
                       SnackBar(
                         content: Text(AppLocalizations.tr('password_changed_success')),
                         backgroundColor: Colors.green,
                       ),
                     );
                   } catch (e) {
-                    setState(() => _isLoading = false);
                     if (!mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    setState(() => _isLoading = false);
+                    messenger.showSnackBar(
                       SnackBar(
                         content: Text(e.toString().replaceAll('Exception: ', '')),
                         backgroundColor: Colors.red,
