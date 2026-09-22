@@ -1,7 +1,9 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 // ignore: avoid_web_libraries_in_flutter, deprecated_member_use
 import 'dart:html' as html;
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/data_models.dart';
 import 'api_service.dart';
@@ -1116,8 +1118,21 @@ Widget buildLanguageSelector(bool isDark) {
 }
 
 const String kAppName = 'OneDev Track';
-const String kAppVersion = 'v1.0.3';
-const String kAppCopyright = '© 2026 OneDev IT. All rights reserved.';
+final ValueNotifier<String> appVersionNotifier = ValueNotifier('v1.0.4');
+
+void loadAppVersion() async {
+  try {
+    final res = await http.get(Uri.parse('version.json'));
+    if (res.statusCode == 200) {
+      final Map<String, dynamic> data = jsonDecode(res.body);
+      if (data['version'] != null) {
+        appVersionNotifier.value = 'v${data['version']}';
+      }
+    }
+  } catch (_) {}
+}
+
+String get kAppCopyright => '© ${DateTime.now().year} OneDev IT. All rights reserved.';
 
 // فوتر التطبيق الاحترافي المعاد استخدامه بجميع الشاشات
 Widget buildAppFooter(bool isDark) {
@@ -1141,13 +1156,18 @@ Widget buildAppFooter(bool isDark) {
                 children: [
                   const Icon(Icons.rocket_launch_rounded, size: 14, color: Colors.blue),
                   const SizedBox(width: 6),
-                  Text(
-                    '$kAppName $kAppVersion',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.grey.shade300 : Colors.grey.shade700,
-                    ),
+                  ValueListenableBuilder<String>(
+                    valueListenable: appVersionNotifier,
+                    builder: (_, version, _) {
+                      return Text(
+                        '$kAppName $version',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.grey.shade300 : Colors.grey.shade700,
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),

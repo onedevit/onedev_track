@@ -25,6 +25,7 @@ class _FreelancePortalAppState extends State<FreelancePortalApp> {
   @override
   void initState() {
     super.initState();
+    loadAppVersion();
     _checkLoginStatus();
   }
 
