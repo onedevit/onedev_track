@@ -8,6 +8,7 @@ import '../services/api_service.dart';
 import '../services/app_localizations.dart';
 import 'admin_task_manager.dart';
 import 'admin_clients_screen.dart';
+import 'admin_settings_screen.dart';
 import 'login_screen.dart';
 import '../main.dart'; // للوصول لـ themeNotifier
 
@@ -136,14 +137,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
         buildLanguageSelector(isDark),
         const SizedBox(width: 8),
 
-        // زر تغيير كلمة المرور
+        // زر فتح شاشة الإعدادات العامة
         IconButton(
-          icon: const Icon(Icons.lock_reset_rounded, color: Colors.blue),
-          tooltip: AppLocalizations.tr('change_password'),
+          icon: const Icon(Icons.settings_rounded, color: Colors.blue),
+          tooltip: AppLocalizations.tr('system_settings_title'),
           onPressed: () {
-            showDialog(
-              context: context,
-              builder: (_) => const ChangePasswordDialog(),
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AdminSettingsScreen()),
             );
           },
         ),
@@ -444,6 +445,19 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       children: [
                         Row(
                           children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: isDark ? Colors.blue.shade900.withValues(alpha: 0.5) : Colors.blue.shade50,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+                              ),
+                              child: Text(
+                                '#ID-${p.id}',
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.blue),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
                             Expanded(
                               child: Text(p.title, 
                                 style: TextStyle(fontSize: isMobile ? 18 : 22, fontWeight: FontWeight.bold, color: isDark ? Colors.white : const Color(0xFF0F172A))
@@ -500,6 +514,28 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     ],
                   ),
                 ),
+              ] else if (p.approvalStatus == 'approved' && p.rejectionReason != null && p.rejectionReason!.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF10B981).withValues(alpha: 0.1) : const Color(0xFFECFDF5),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: isDark ? const Color(0xFF10B981).withValues(alpha: 0.3) : const Color(0xFFA7F3D0)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.check_circle_outline_rounded, color: Color(0xFF10B981), size: 18),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text('ملاحظات وتوجيهات موافقة الخطة المبدئية من العميل 📝: ${p.rejectionReason}', 
+                          style: TextStyle(color: isDark ? const Color(0xFFA7F3D0) : const Color(0xFF065F46), fontSize: 12, fontWeight: FontWeight.bold)
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
 
               // إذا كانت نسبة الإنجاز 100%، نعرض حالة المصادقة النهائية المباشرة للعميل
@@ -550,6 +586,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: Colors.grey),
                 ],
               ),
+
+              // عرض المرفقات والصور المرفقة دائماً ببطاقة المشروع لكل نسب الإنجاز (0% أو 100%)
+              _buildAttachmentsWidget(p, isDark),
             ],
           ),
         ),
@@ -697,43 +736,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
             Text(
               'ملاحظات الحريف: ${p.finalApprovalNotes}',
               style: TextStyle(color: isDark ? const Color(0xFFFCA5A5) : const Color(0xFF991B1B), fontSize: 12, fontWeight: FontWeight.w500),
-            ),
-          ],
-          if (p.attachments.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            Text('المرفقات والصور المرفقة (${p.attachments.length}):', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: color)),
-            const SizedBox(height: 6),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: p.attachments.map((att) {
-                final bool isPdf = att.fileType.toLowerCase() == 'pdf';
-                final String fullUrl = 'https://onedev.ovh/track/${att.filePath}';
-
-                return InkWell(
-                  onTap: () {
-                    if (kIsWeb) html.window.open(fullUrl, '_blank');
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF0F172A) : Colors.white,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: color.withValues(alpha: 0.3)),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(isPdf ? Icons.picture_as_pdf_rounded : Icons.image_rounded, size: 14, color: isPdf ? Colors.red : Colors.blue),
-                        const SizedBox(width: 6),
-                        Text(att.fileName, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                        const SizedBox(width: 4),
-                        const Icon(Icons.open_in_new_rounded, size: 12, color: Colors.grey),
-                      ],
-                    ),
-                  ),
-                );
-              }).toList(),
             ),
           ],
           if (p.finalApprovalStatus != 'pending') ...[
@@ -1196,6 +1198,100 @@ class _AdminDashboardState extends State<AdminDashboard> {
           )
         ],
       ),
+    );
+  }
+
+  Widget _buildAttachmentsWidget(Project p, bool isDark) {
+    if (p.attachments.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 14),
+        Text(
+          'المرفقات والصور المرفقة (${p.attachments.length}):',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 12,
+            color: isDark ? Colors.white70 : const Color(0xFF0F172A),
+          ),
+        ),
+        const SizedBox(height: 6),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (var att in p.attachments) ...[
+              Builder(
+                builder: (context) {
+                  final bool isPdf = att.fileType.toLowerCase() == 'pdf';
+                  final bool isAccepted = att.filePath.contains('accepted');
+                  final Color borderClr = isAccepted ? const Color(0xFF10B981) : Colors.blue;
+                  final String fullUrl = 'https://onedev.ovh/track/${att.filePath}';
+
+                  if (att.fileDeleted) {
+                    return Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(isPdf ? Icons.picture_as_pdf_rounded : Icons.image_rounded, size: 14, color: Colors.grey),
+                          const SizedBox(width: 6),
+                          Text('${att.fileName} (مؤرشف - حُذف من السيرفر)', style: const TextStyle(fontSize: 11, color: Colors.grey, fontStyle: FontStyle.italic)),
+                        ],
+                      ),
+                    );
+                  }
+
+                  return InkWell(
+                    onTap: () {
+                      if (kIsWeb) html.window.open(fullUrl, '_blank');
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF0F172A) : Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: borderClr.withValues(alpha: 0.4)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            isPdf ? Icons.picture_as_pdf_rounded : Icons.image_rounded,
+                            size: 14,
+                            color: isAccepted ? const Color(0xFF10B981) : (isPdf ? Colors.red : Colors.blue),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(att.fileName, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                          if (isAccepted) ...[
+                            const SizedBox(width: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: const Text('موافقة 🟢', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFF10B981))),
+                            ),
+                          ],
+                          const SizedBox(width: 4),
+                          const Icon(Icons.open_in_new_rounded, size: 12, color: Colors.grey),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              )
+            ]
+          ],
+        ),
+      ],
     );
   }
 

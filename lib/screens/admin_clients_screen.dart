@@ -379,16 +379,33 @@ class _AdminClientsScreenState extends State<AdminClientsScreen> {
                   ],
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.blue.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  '${c.projectsCount} ${AppLocalizations.tr('projects_count_label')}',
-                  style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 11),
-                ),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF0F172A) : Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: isDark ? const Color(0xFF334155) : Colors.grey.shade300),
+                    ),
+                    child: Text(
+                      _getLangLabel(c.preferredLanguage),
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 10, color: isDark ? Colors.white70 : const Color(0xFF0F172A)),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      '${c.projectsCount} ${AppLocalizations.tr('projects_count_label')}',
+                      style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 11),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -469,6 +486,18 @@ class _AdminClientsScreenState extends State<AdminClientsScreen> {
     );
   }
 
+  String _getLangLabel(String lang) {
+    switch (lang.toLowerCase()) {
+      case 'en':
+        return '🇬🇧 English';
+      case 'fr':
+        return '🇫🇷 Français';
+      case 'ar':
+      default:
+        return '🇸🇦 العربية';
+    }
+  }
+
   // حالة عدم وجود نتائج
   Widget _buildEmptyState(bool isDark) {
     return Padding(
@@ -499,6 +528,10 @@ class _AdminClientsScreenState extends State<AdminClientsScreen> {
     final passwordCtrl = TextEditingController();
     final fullNameCtrl = TextEditingController(text: client?.fullName ?? '');
     final companyCtrl = TextEditingController(text: client?.companyName ?? '');
+
+    String selectedLanguage = (client != null && client.preferredLanguage.isNotEmpty)
+        ? client.preferredLanguage
+        : 'ar';
 
     String selectedCountry = client != null && client.country.isNotEmpty && _locationData.containsKey(client.country)
         ? client.country
@@ -723,6 +756,51 @@ class _AdminClientsScreenState extends State<AdminClientsScreen> {
                         ],
                       ),
 
+                      const SizedBox(height: 20),
+
+                      _buildSectionHeader('اللغة الافتراضية للواجهة 🌐', Icons.translate_rounded, isDark),
+                      const SizedBox(height: 14),
+
+                      DropdownButtonFormField<String>(
+                        initialValue: selectedLanguage,
+                        decoration: _buildInputDecoration('اللغة الافتراضية للحريف', Icons.language_rounded, isDark),
+                        dropdownColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+                        items: const [
+                          DropdownMenuItem<String>(
+                            value: 'ar',
+                            child: Row(
+                              children: [
+                                Text('🇸🇦 ', style: TextStyle(fontSize: 14)),
+                                Text('العربية (Arabic)', style: TextStyle(fontWeight: FontWeight.bold)),
+                              ],
+                            ),
+                          ),
+                          DropdownMenuItem<String>(
+                            value: 'en',
+                            child: Row(
+                              children: [
+                                Text('🇬🇧 ', style: TextStyle(fontSize: 14)),
+                                Text('English (الإنجليزية)', style: TextStyle(fontWeight: FontWeight.bold)),
+                              ],
+                            ),
+                          ),
+                          DropdownMenuItem<String>(
+                            value: 'fr',
+                            child: Row(
+                              children: [
+                                Text('🇫🇷 ', style: TextStyle(fontSize: 14)),
+                                Text('Français (الفرنسية)', style: TextStyle(fontWeight: FontWeight.bold)),
+                              ],
+                            ),
+                          ),
+                        ],
+                        onChanged: (val) {
+                          if (val != null) {
+                            setModalState(() => selectedLanguage = val);
+                          }
+                        },
+                      ),
+
                       const SizedBox(height: 24),
                       Divider(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
                       const SizedBox(height: 16),
@@ -755,6 +833,7 @@ class _AdminClientsScreenState extends State<AdminClientsScreen> {
                                           state: selectedState ?? '',
                                           city: selectedCity ?? '',
                                           companyName: companyCtrl.text.trim(),
+                                          preferredLanguage: selectedLanguage,
                                         );
                                       } else {
                                         await ApiService().createClient(
@@ -765,6 +844,7 @@ class _AdminClientsScreenState extends State<AdminClientsScreen> {
                                           state: selectedState ?? '',
                                           city: selectedCity ?? '',
                                           companyName: companyCtrl.text.trim(),
+                                          preferredLanguage: selectedLanguage,
                                         );
                                       }
 

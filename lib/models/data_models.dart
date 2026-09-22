@@ -8,6 +8,7 @@ class ClientUser {
   final String state;
   final String city;
   final String companyName;
+  final String preferredLanguage;
   final int projectsCount;
 
   ClientUser({
@@ -18,6 +19,7 @@ class ClientUser {
     this.state = '',
     this.city = '',
     this.companyName = '',
+    this.preferredLanguage = 'ar',
     this.projectsCount = 0,
   });
 
@@ -30,6 +32,7 @@ class ClientUser {
       state: json['state'] ?? '',
       city: json['city'] ?? '',
       companyName: json['company_name'] ?? '',
+      preferredLanguage: json['preferred_language'] ?? 'ar',
       projectsCount: json['projects_count'] != null ? int.parse(json['projects_count'].toString()) : 0,
     );
   }
@@ -43,6 +46,7 @@ class ProjectAttachment {
   final String filePath;
   final String fileType;
   final int fileSize;
+  final bool fileDeleted;
 
   ProjectAttachment({
     required this.id,
@@ -52,6 +56,7 @@ class ProjectAttachment {
     required this.filePath,
     required this.fileType,
     required this.fileSize,
+    this.fileDeleted = false,
   });
 
   factory ProjectAttachment.fromJson(Map<String, dynamic> json) {
@@ -63,6 +68,7 @@ class ProjectAttachment {
       filePath: json['file_path'] ?? '',
       fileType: json['file_type'] ?? '',
       fileSize: json['file_size'] != null ? int.parse(json['file_size'].toString()) : 0,
+      fileDeleted: json['file_deleted'] == true || json['file_deleted'].toString() == '1',
     );
   }
 }

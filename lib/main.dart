@@ -33,6 +33,11 @@ class _FreelancePortalAppState extends State<FreelancePortalApp> {
     final token = prefs.getString('token');
     final role = prefs.getString('role');
     final loginTimeStr = prefs.getString('login_time');
+    final prefLang = prefs.getString('preferred_language');
+
+    if (prefLang != null && ['ar', 'en', 'fr'].contains(prefLang)) {
+      localeNotifier.setLocale(prefLang);
+    }
 
     if (token != null && role != null && loginTimeStr != null) {
       final loginTime = DateTime.parse(loginTimeStr);

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
 import '../services/app_localizations.dart';
 import 'admin_dashboard.dart';
@@ -25,8 +26,16 @@ class _LoginScreenState extends State<LoginScreen> {
       final role = await ApiService().login(_username.text.trim(), _password.text.trim());
       if (!mounted) return;
 
+      final prefs = await SharedPreferences.getInstance();
+      final prefLang = prefs.getString('preferred_language');
+      if (prefLang != null && ['ar', 'en', 'fr'].contains(prefLang)) {
+        localeNotifier.setLocale(prefLang);
+      }
+
       // إنهاء سياق التعبئة التلقائية لإجبار المتصفح على إظهار نافذة حفظ كلمة المرور
       TextInput.finishAutofillContext();
+
+      if (!mounted) return;
 
       if (role == 'admin') {
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const AdminDashboard()));

@@ -6,7 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 // Service responsable des appels API vers le serveur backend PHP
 class ApiService {
   // L'URL de base de votre API (À modifier lors du déploiement sur le VPS)
-  static const String baseUrl = 'https://onedev.ovh/api'; 
+  static const String baseUrl = 'https://onedev.ovh/track/api'; 
 
   // Récupérer les en-têtes (Headers) avec le Token JWT s'il existe
   Future<Map<String, String>> getHeaders() async {
@@ -28,14 +28,37 @@ class ApiService {
       final data = jsonDecode(res.body);
       final prefs = await SharedPreferences.getInstance();
       
-      // Sauvegarder le Token, le Rôle, et le temps de connexion
+      // Sauvegarder le Token, le Rôle, le temps de connexion et la langue préférée
       await prefs.setString('token', data['token']);
       await prefs.setString('role', data['role']);
       await prefs.setString('login_time', DateTime.now().toIso8601String()); // حفظ وقت الدخول
+      if (data['preferred_language'] != null) {
+        await prefs.setString('preferred_language', data['preferred_language']);
+      }
       
       return data['role'];
     }
     throw Exception('Échec de la connexion');
+  }
+
+  // [CLIENT/ADMIN] تغيير وحفظ اللغة الافتراضية للمستخدم
+  Future<void> changeLanguage(String langCode) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('preferred_language', langCode);
+
+    try {
+      final res = await http.post(
+        Uri.parse('$baseUrl/client/change_language.php'),
+        headers: await getHeaders(),
+        body: jsonEncode({'language': langCode}),
+      );
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        if (data['preferred_language'] != null) {
+          await prefs.setString('preferred_language', data['preferred_language']);
+        }
+      }
+    } catch (_) {}
   }
 
   // Fonction de déconnexion
@@ -58,7 +81,7 @@ class ApiService {
     throw Exception('Erreur lors du chargement des clients');
   }
 
-  // [ADMIN] إنشاء حريف جديد مع بيانات الهوية والعنوان والشركة
+  // [ADMIN] إنشاء حريف جديد مع بيانات الهوية والعنوان والشركة واللغة الافتراضية
   Future<void> createClient(
     String username, 
     String password, {
@@ -67,6 +90,7 @@ class ApiService {
     String state = '',
     String city = '',
     String companyName = '',
+    String preferredLanguage = 'ar',
   }) async {
     final res = await http.post(
       Uri.parse('$baseUrl/admin/clients.php'),
@@ -79,6 +103,7 @@ class ApiService {
         'state': state,
         'city': city,
         'company_name': companyName,
+        'preferred_language': preferredLanguage,
       }),
     );
     if (res.statusCode != 200) {
@@ -97,6 +122,7 @@ class ApiService {
     String state = '',
     String city = '',
     String companyName = '',
+    String preferredLanguage = 'ar',
   }) async {
     final body = {
       'client_id': clientId,
@@ -106,6 +132,7 @@ class ApiService {
       'state': state,
       'city': city,
       'company_name': companyName,
+      'preferred_language': preferredLanguage,
     };
     if (password != null && password.isNotEmpty) {
       body['password'] = password;
@@ -226,8 +253,39 @@ class ApiService {
     if (res.statusCode != 200) throw Exception('Error resolving revision');
   }
 
-  // [CLIENT] رفع مرفق (صورة أو PDF) للمشروع حتى 30 ميجابايت
-  Future<Map<String, dynamic>> uploadAttachment(int projectId, String fileName, Uint8List fileBytes) async {
+  // [COMMON] جلب إعدادات النظام العامة
+  Future<Map<String, String>> getSettings() async {
+    final res = await http.get(
+      Uri.parse('$baseUrl/admin/settings.php'),
+      headers: await getHeaders(),
+    );
+    if (res.statusCode == 200) {
+      final Map<String, dynamic> data = jsonDecode(res.body);
+      return data.map((key, value) => MapEntry(key, value.toString()));
+    }
+    return {"max_attachments_count": "5", "max_file_size_mb": "30"};
+  }
+
+  // [ADMIN] تحديث إعدادات النظام العامة
+  Future<void> updateSettings(Map<String, String> settings) async {
+    final res = await http.post(
+      Uri.parse('$baseUrl/admin/settings.php'),
+      headers: await getHeaders(),
+      body: jsonEncode(settings),
+    );
+    if (res.statusCode != 200) throw Exception('Error updating settings');
+  }
+
+  // [ADMIN] اختبار استدعاء سكربت التنظيف الآلي للسيرفر Cron Job
+  Future<Map<String, dynamic>> testCronCleanup(String cronSecretToken) async {
+    final res = await http.get(
+      Uri.parse('$baseUrl/admin/auto_cleanup_attachments.php?cron_key=$cronSecretToken'),
+    );
+    return jsonDecode(res.body);
+  }
+
+  // [CLIENT] رفع مرفق (صورة أو PDF) للمشروع مع تحديد النوع (rejections أو accepted)
+  Future<Map<String, dynamic>> uploadAttachment(int projectId, String fileName, Uint8List fileBytes, {String type = 'rejections'}) async {
     final uri = Uri.parse('$baseUrl/client/upload_attachment.php');
     final request = http.MultipartRequest('POST', uri);
     
@@ -236,6 +294,7 @@ class ApiService {
     request.headers.addAll(headers);
 
     request.fields['project_id'] = projectId.toString();
+    request.fields['type'] = type;
     request.files.add(http.MultipartFile.fromBytes('file', fileBytes, filename: fileName));
 
     final streamedResponse = await request.send();
