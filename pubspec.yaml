@@ -4,7 +4,7 @@ description: "Un portail de suivi des projets freelance moderne et professionnel
 publish_to: 'none'
 
 # Définit la version et le numéro de build pour votre application.
-version: 1.0.0+1
+version: 1.0.1+2
 
 environment:
   sdk: ^3.13.2
