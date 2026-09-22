@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -213,6 +214,49 @@ class ApiService {
       body: jsonEncode({'project_id': projectId}),
     );
     if (res.statusCode != 200) throw Exception('Error resetting final approval');
+  }
+
+  // [ADMIN] اعتماد وتطبيق ملاحظات الحريف وإعادة إرسال المشروع للمصادقة النهائية
+  Future<void> resolveRevisionAndResubmit(int projectId) async {
+    final res = await http.post(
+      Uri.parse('$baseUrl/admin/resolve_revision.php'),
+      headers: await getHeaders(),
+      body: jsonEncode({'project_id': projectId}),
+    );
+    if (res.statusCode != 200) throw Exception('Error resolving revision');
+  }
+
+  // [CLIENT] رفع مرفق (صورة أو PDF) للمشروع حتى 30 ميجابايت
+  Future<Map<String, dynamic>> uploadAttachment(int projectId, String fileName, Uint8List fileBytes) async {
+    final uri = Uri.parse('$baseUrl/client/upload_attachment.php');
+    final request = http.MultipartRequest('POST', uri);
+    
+    final headers = await getHeaders();
+    headers.remove('Content-Type'); // Multipart handles its own boundary
+    request.headers.addAll(headers);
+
+    request.fields['project_id'] = projectId.toString();
+    request.files.add(http.MultipartFile.fromBytes('file', fileBytes, filename: fileName));
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      final err = jsonDecode(response.body)['message'] ?? 'Error uploading attachment';
+      throw Exception(err);
+    }
+  }
+
+  // [CLIENT] حذف مرفق
+  Future<void> deleteAttachment(int attachmentId) async {
+    final res = await http.post(
+      Uri.parse('$baseUrl/client/delete_attachment.php'),
+      headers: await getHeaders(),
+      body: jsonEncode({'attachment_id': attachmentId}),
+    );
+    if (res.statusCode != 200) throw Exception('Error deleting attachment');
   }
 
   // [ADMIN] Récupérer les tâches d'un projet spécifique

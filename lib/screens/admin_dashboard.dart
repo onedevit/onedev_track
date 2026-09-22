@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+// ignore: avoid_web_libraries_in_flutter, deprecated_member_use
+import 'dart:html' as html;
 import 'package:intl/intl.dart';
 import '../models/data_models.dart';
 import '../services/api_service.dart';
@@ -626,43 +629,160 @@ class _AdminDashboardState extends State<AdminDashboard> {
               ]
             ],
           ),
-          if (p.finalApprovalStatus == 'rejected' && p.finalApprovalNotes != null && p.finalApprovalNotes!.isNotEmpty) ...[
+          // عرض سجل المراجعات التراكمية (السابقة والمعلقة)
+          if (p.revisions.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: p.revisions.map((rev) {
+                final bool isResolved = rev.status == 'resolved';
+                final String revDate = DateFormat('yyyy-MM-dd HH:mm').format(rev.createdAt);
+
+                return Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(bottom: 6),
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: isResolved 
+                        ? (isDark ? Colors.green.withValues(alpha: 0.1) : Colors.green.shade50)
+                        : (isDark ? Colors.red.withValues(alpha: 0.1) : Colors.red.shade50),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: isResolved 
+                          ? (isDark ? Colors.green.shade800 : Colors.green.shade200)
+                          : (isDark ? Colors.red.shade800 : Colors.red.shade200),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            isResolved ? Icons.check_circle_rounded : Icons.pending_actions_rounded,
+                            size: 14,
+                            color: isResolved ? Colors.green : Colors.red,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'مراجعة #${rev.revisionNumber} - ${isResolved ? "تمت المعالجة من الإدارة ✓" : "بانتظار المعالجة ⚠️"}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: isResolved ? Colors.green : Colors.red,
+                            ),
+                          ),
+                          const Spacer(),
+                          Text(revDate, style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        rev.clientNotes,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isResolved 
+                              ? Colors.grey 
+                              : (isDark ? const Color(0xFFFCA5A5) : const Color(0xFF991B1B)),
+                          decoration: isResolved ? TextDecoration.lineThrough : null,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+          ] else if (p.finalApprovalStatus == 'rejected' && p.finalApprovalNotes != null && p.finalApprovalNotes!.isNotEmpty) ...[
             const SizedBox(height: 8),
             Text(
               'ملاحظات الحريف: ${p.finalApprovalNotes}',
               style: TextStyle(color: isDark ? const Color(0xFFFCA5A5) : const Color(0xFF991B1B), fontSize: 12, fontWeight: FontWeight.w500),
             ),
           ],
+          if (p.attachments.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Text('المرفقات والصور المرفقة (${p.attachments.length}):', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: color)),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: p.attachments.map((att) {
+                final bool isPdf = att.fileType.toLowerCase() == 'pdf';
+                final String fullUrl = 'https://onedev.ovh/track/${att.filePath}';
+
+                return InkWell(
+                  onTap: () {
+                    if (kIsWeb) html.window.open(fullUrl, '_blank');
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF0F172A) : Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: color.withValues(alpha: 0.3)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(isPdf ? Icons.picture_as_pdf_rounded : Icons.image_rounded, size: 14, color: isPdf ? Colors.red : Colors.blue),
+                        const SizedBox(width: 6),
+                        Text(att.fileName, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                        const SizedBox(width: 4),
+                        const Icon(Icons.open_in_new_rounded, size: 12, color: Colors.grey),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
           if (p.finalApprovalStatus != 'pending') ...[
             const SizedBox(height: 10),
-            Row(
-              children: [
-                if (p.finalApprovalStatus == 'approved') ...[
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  if (p.finalApprovalStatus == 'approved') ...[
+                    OutlinedButton.icon(
+                      onPressed: () => AppLocalizations.printHandoverCertificate(p),
+                      icon: const Icon(Icons.print_rounded, size: 16),
+                      label: const Text('🖨️ طباعة شهادة الاستلام'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF10B981),
+                        side: const BorderSide(color: Color(0xFF10B981)),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  if (p.finalApprovalStatus == 'rejected') ...[
+                    ElevatedButton.icon(
+                      onPressed: () => _confirmResolveRevision(p),
+                      icon: const Icon(Icons.send_rounded, size: 16),
+                      label: Text(AppLocalizations.tr('resolve_revision_button')),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF3B82F6),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
                   OutlinedButton.icon(
-                    onPressed: () => AppLocalizations.printHandoverCertificate(p),
-                    icon: const Icon(Icons.print_rounded, size: 16),
-                    label: const Text('🖨️ طباعة شهادة الاستلام'),
+                    onPressed: () => _confirmResetFinalApproval(p),
+                    icon: const Icon(Icons.restart_alt_rounded, size: 16),
+                    label: Text(AppLocalizations.tr('reset_final_approval')),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFF10B981),
-                      side: const BorderSide(color: Color(0xFF10B981)),
+                      foregroundColor: const Color(0xFFF59E0B),
+                      side: const BorderSide(color: Color(0xFFF59E0B)),
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                     ),
                   ),
-                  const SizedBox(width: 8),
                 ],
-                OutlinedButton.icon(
-                  onPressed: () => _confirmResetFinalApproval(p),
-                  icon: const Icon(Icons.restart_alt_rounded, size: 16),
-                  label: Text(AppLocalizations.tr('reset_final_approval')),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFFF59E0B),
-                    side: const BorderSide(color: Color(0xFFF59E0B)),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                ),
-              ],
+              ),
             ),
           ],
         ],
@@ -992,6 +1112,34 @@ class _AdminDashboardState extends State<AdminDashboard> {
         child: Text(c.username, style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.white : const Color(0xFF0F172A))),
       )).toList(),
       onChanged: onChanged,
+    );
+  }
+
+  void _confirmResolveRevision(Project project) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(AppLocalizations.tr('resolve_revision_button')),
+        content: Text(AppLocalizations.tr('confirm_resolve_revision')),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppLocalizations.tr('cancel'))),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF3B82F6), foregroundColor: Colors.white),
+            onPressed: () async {
+              try {
+                await ApiService().resolveRevisionAndResubmit(project.id);
+                if (!ctx.mounted || !mounted) return;
+                Navigator.pop(ctx);
+                _fetchData();
+              } catch (e) {
+                if (!ctx.mounted) return;
+                ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text(AppLocalizations.tr('error'))));
+              }
+            },
+            child: Text(AppLocalizations.tr('confirm')),
+          )
+        ],
+      ),
     );
   }
 

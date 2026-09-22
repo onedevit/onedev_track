@@ -104,6 +104,8 @@ class AppLocalizations {
       'final_approval_status_label': 'حالة المصادقة النهائية',
       'reset_final_approval': 'إعادة تعيين الاستلام النهائي 🔄',
       'confirm_reset_final_approval': 'هل أنت متأكد من إلغاء وإعادة تعيين حالة الاستلام النهائي لهذا المشروع؟',
+      'resolve_revision_button': 'تمت معالجة الملاحظات - إعادة الإرسال للحريف 🚀',
+      'confirm_resolve_revision': 'هل قمت بإنهاء وتطبيق كافة الملاحظات وإعادة إرسال المشروع للحريف للمصادقة النهائية؟',
       'task_completed': 'مكتملة',
       'task_in_progress': 'قيد العمل',
       'completed_at_label': 'تاريخ ووقت الإنجاز',
@@ -236,6 +238,8 @@ class AppLocalizations {
       'final_approval_status_label': 'Final Handover Status',
       'reset_final_approval': 'Reset Final Handover 🔄',
       'confirm_reset_final_approval': 'Are you sure you want to cancel and reset the final handover status for this project?',
+      'resolve_revision_button': 'Resolve Notes & Resubmit to Client 🚀',
+      'confirm_resolve_revision': 'Have you resolved all notes and want to resubmit the project to the client for final sign-off?',
       'task_completed': 'Completed',
       'task_in_progress': 'In Progress',
       'no_active_projects': 'No active projects assigned to you currently.',
@@ -367,6 +371,8 @@ class AppLocalizations {
       'final_approval_status_label': 'Statut de Livraison Finale',
       'reset_final_approval': 'Réinitialiser Livraison Finale 🔄',
       'confirm_reset_final_approval': 'Êtes-vous sûr de vouloir annuler et réinitialiser le statut de livraison finale pour ce projet ?',
+      'resolve_revision_button': 'Résoudre les remarques & Renvoyer au Client 🚀',
+      'confirm_resolve_revision': 'Avez-vous résolu toutes les remarques et souhaitez-vous renvoyer le projet au client pour validation finale ?',
       'task_completed': 'Terminée',
       'task_in_progress': 'En Cours',
       'no_active_projects': 'Aucun projet actif ne vous est attribué actuellement.',
@@ -455,24 +461,104 @@ class AppLocalizations {
         ? project.finalApprovalDate.toString().split('.')[0]
         : DateTime.now().toString().split('.')[0];
 
+    final String initialApprovalDateStr = project.clientApprovalDate != null
+        ? project.clientApprovalDate.toString().split('.')[0]
+        : 'معتمد';
+
     final String refId = 'PRJ-${project.id}-${project.clientId}';
 
+    // بناء صفوف محضر المهام والعمليات المكتملة 100% مع تقارير الإدارة
     String taskRows = '';
     for (var task in project.tasks) {
+      String adminReportNote = task.notes.isNotEmpty ? '<br><span style="color:#2563eb; font-size:11px;">📌 تقرير الإنجاز: ${task.notes}</span>' : '';
       taskRows += '''
         <tr>
-          <td><strong>${task.title}</strong><br><span style="color:#64748b; font-size:12px;">${task.description}</span></td>
-          <td class="status">مكتملة ✓</td>
+          <td><strong>${task.title}</strong><br><span style="color:#64748b; font-size:12px;">${task.description}</span>$adminReportNote</td>
+          <td class="status">مكتملة 100% ✓</td>
         </tr>
       ''';
       for (var sub in task.subTasks) {
+        String subAdminNote = sub.notes.isNotEmpty ? '<br><span style="color:#2563eb; font-size:11px;">📌 تقرير الإنجاز: ${sub.notes}</span>' : '';
         taskRows += '''
           <tr>
-            <td style="padding-right: 30px;">↳ ${sub.title}</td>
-            <td class="status">مكتملة ✓</td>
+            <td style="padding-right: 30px;">↳ ${sub.title}<br><span style="color:#64748b; font-size:11px;">${sub.description}</span>$subAdminNote</td>
+            <td class="status">مكتملة 100% ✓</td>
           </tr>
         ''';
       }
+    }
+
+    // بناء صفوف المرفقات والصور المعتمدة
+    String attachmentSection = '';
+    if (project.attachments.isNotEmpty) {
+      String attRows = '';
+      for (var att in project.attachments) {
+        final double sizeMb = att.fileSize / (1024 * 1024);
+        final String fullUrl = 'https://onedev.ovh/track/${att.filePath}';
+        attRows += '''
+          <tr>
+            <td>📎 <strong>${att.fileName}</strong></td>
+            <td>${att.fileType.toUpperCase()}</td>
+            <td>${sizeMb.toStringAsFixed(2)} MB</td>
+            <td><a href="$fullUrl" target="_blank" style="color:#2563eb; font-weight:bold; text-decoration:none;">معاينة المرفق 🔗</a></td>
+          </tr>
+        ''';
+      }
+      attachmentSection = '''
+        <div class="section-title">المرفقات والدلائل المرفقة (${project.attachments.length} ملفات)</div>
+        <table class="tasks-table">
+          <thead>
+            <tr>
+              <th>اسم الملف المرفق</th>
+              <th style="width: 80px;">النوع</th>
+              <th style="width: 100px;">الحجم</th>
+              <th style="width: 120px;">الرابط</th>
+            </tr>
+          </thead>
+          <tbody>
+            $attRows
+          </tbody>
+        </table>
+      ''';
+    }
+
+    // بناء قسم سجل المراجعات والتعديلات المعالجة بأسلوب مشطب وأنيق
+    String notesSection = '';
+    if (project.revisions.isNotEmpty) {
+      String revRows = '';
+      for (var rev in project.revisions) {
+        final bool isResolved = rev.status == 'resolved';
+        final String revDate = rev.createdAt.toString().split('.')[0];
+        final String resolvedDateStr = rev.resolvedAt != null ? ' (تمت المعالجة: ${rev.resolvedAt.toString().split('.')[0]})' : '';
+        final String notesDecoration = isResolved ? 'text-decoration: line-through; color: #64748b;' : 'color: #991b1b;';
+        final String statusBadge = isResolved 
+            ? '<span style="color:#059669; font-weight:bold;">تمت المعالجة من الإدارة ✓</span>' 
+            : '<span style="color:#dc2626; font-weight:bold;">بانتظار المعالجة ⚠️</span>';
+
+        revRows += '''
+          <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px 16px; margin-bottom:10px;">
+            <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px;">
+              <strong>مراجعة #${rev.revisionNumber} — $statusBadge</strong>
+              <span style="color:#94a3b8;">$revDate $resolvedDateStr</span>
+            </div>
+            <div style="font-size:13px; $notesDecoration">${rev.clientNotes}</div>
+          </div>
+        ''';
+      }
+
+      notesSection = '''
+        <div class="section-title">سجل مراجعات وملاحظات الحريف المعالجة أثناء التسليم النهائي</div>
+        <div style="margin-bottom:25px;">
+          $revRows
+        </div>
+      ''';
+    } else if (project.finalApprovalNotes != null && project.finalApprovalNotes!.isNotEmpty) {
+      notesSection = '''
+        <div class="section-title">ملاحظات وتعقيبات الحريف المعالجة أثناء التسليم النهائي</div>
+        <div style="background:#fffbeb; border:1px solid #fde68a; padding:15px; border-radius:12px; margin-bottom:25px; font-size:13px; color:#92400e;">
+          📝 <strong>الملاحظات المعتمدة:</strong> ${project.finalApprovalNotes}
+        </div>
+      ''';
     }
 
     return '''<!DOCTYPE html>
@@ -492,7 +578,7 @@ class AppLocalizations {
     }
 
     .cert-card {
-      max-width: 850px;
+      max-width: 880px;
       margin: 0 auto;
       background: #ffffff;
       border-radius: 20px;
@@ -561,15 +647,16 @@ class AppLocalizations {
     .info-val {
       color: #0f172a;
       font-weight: 700;
-      font-size: 15px;
+      font-size: 14px;
       margin-top: 2px;
     }
 
     .section-title {
-      font-size: 17px;
+      font-size: 16px;
       font-weight: 800;
       color: #0f172a;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
+      margin-top: 20px;
       border-right: 4px solid #10b981;
       padding-right: 10px;
     }
@@ -577,7 +664,7 @@ class AppLocalizations {
     .tasks-table {
       width: 100%;
       border-collapse: collapse;
-      margin-bottom: 30px;
+      margin-bottom: 25px;
     }
 
     .tasks-table th, .tasks-table td {
@@ -686,7 +773,7 @@ class AppLocalizations {
         <span class="logo-icon">🚀</span>
         <div>
           <div class="title-text">OneDev Track</div>
-          <div style="font-size:12px; color:#64748b;">محضر وشهادة استلام مشروع رسمي • المرجع: $refId</div>
+          <div style="font-size:12px; color:#64748b;">محضر وشهادة استلام مشروع رسمي ومصادق • المرجع: $refId</div>
         </div>
       </div>
       <div class="doc-badge">مرخص ومعتمد ✓</div>
@@ -703,20 +790,32 @@ class AppLocalizations {
       </div>
       <div class="info-item">
         <div class="info-label">تاريخ البدء والموعد النهائي:</div>
-        <div class="info-val">${project.startDate.toString().split(' ')[0]} &rarr; ${project.deadline.toString().split(' ')[0]}</div>
+        <div class="info-val">${project.startDate.toString().split(' ')[0]} &rarr; ${project.deadline.toString().split(' ')[0]} (${project.durationDays} أيام عمل)</div>
       </div>
       <div class="info-item">
-        <div class="info-label">تاريخ وتوقيت الاستلام النهائي:</div>
-        <div class="info-val">$approvalDateStr</div>
+        <div class="info-label">تاريخ وتوقيت اعتماد الخطة المبدئي:</div>
+        <div class="info-val">$initialApprovalDateStr</div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">تاريخ وتوقيت المصادقة والاستلام النهائي:</div>
+        <div class="info-val" style="color:#10b981;">$approvalDateStr ✓</div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">إجمالي العمليات المنجزة:</div>
+        <div class="info-val">${project.completedTasks} / ${project.totalTasks} مهام (إنجاز 100%)</div>
       </div>
     </div>
 
-    <div class="section-title">محضر إنجاز وإكتمال كافة المهام (100%)</div>
+    $notesSection
+
+    $attachmentSection
+
+    <div class="section-title">محضر إنجاز وإكتمال كافة المهام وتقارير التنفيذ (100%)</div>
     <table class="tasks-table">
       <thead>
         <tr>
-          <th>اسم المهمة / العملية</th>
-          <th style="width: 100px;">الحالة</th>
+          <th>اسم المهمة / العملية وتفاصيل الإنجاز</th>
+          <th style="width: 110px;">حالة الإنجاز</th>
         </tr>
       </thead>
       <tbody>
@@ -738,7 +837,7 @@ class AppLocalizations {
         </svg>
         <div>
           <div class="stamp-text-title">تمت المصادقة والاستلام النهائي بنجاح</div>
-          <div class="stamp-text-sub">تم استلام المشروع كاملاً وبحالة تشغيلية ممتازة معتمدة</div>
+          <div class="stamp-text-sub">تم استلام جميع مخرجات المشروع بحالة تشغيلية ممتازة معتمدة</div>
         </div>
       </div>
 

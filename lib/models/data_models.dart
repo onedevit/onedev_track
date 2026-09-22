@@ -35,6 +35,70 @@ class ClientUser {
   }
 }
 
+class ProjectAttachment {
+  final int id;
+  final int projectId;
+  final int? revisionId;
+  final String fileName;
+  final String filePath;
+  final String fileType;
+  final int fileSize;
+
+  ProjectAttachment({
+    required this.id,
+    required this.projectId,
+    this.revisionId,
+    required this.fileName,
+    required this.filePath,
+    required this.fileType,
+    required this.fileSize,
+  });
+
+  factory ProjectAttachment.fromJson(Map<String, dynamic> json) {
+    return ProjectAttachment(
+      id: int.parse(json['id'].toString()),
+      projectId: int.parse(json['project_id'].toString()),
+      revisionId: json['revision_id'] != null ? int.parse(json['revision_id'].toString()) : null,
+      fileName: json['file_name'] ?? '',
+      filePath: json['file_path'] ?? '',
+      fileType: json['file_type'] ?? '',
+      fileSize: json['file_size'] != null ? int.parse(json['file_size'].toString()) : 0,
+    );
+  }
+}
+
+class ProjectRevision {
+  final int id;
+  final int projectId;
+  final int revisionNumber;
+  final String clientNotes;
+  final String status; // 'pending' or 'resolved'
+  final DateTime createdAt;
+  final DateTime? resolvedAt;
+
+  ProjectRevision({
+    required this.id,
+    required this.projectId,
+    required this.revisionNumber,
+    required this.clientNotes,
+    required this.status,
+    required this.createdAt,
+    this.resolvedAt,
+  });
+
+  factory ProjectRevision.fromJson(Map<String, dynamic> json) {
+    return ProjectRevision(
+      id: int.parse(json['id'].toString()),
+      projectId: int.parse(json['project_id'].toString()),
+      revisionNumber: int.parse(json['revision_number'].toString()),
+      clientNotes: json['client_notes'] ?? '',
+      status: json['status'] ?? 'pending',
+      createdAt: DateTime.parse(json['created_at']),
+      resolvedAt: json['resolved_at'] != null ? DateTime.parse(json['resolved_at']) : null,
+    );
+  }
+}
+
 class Project {
   final int id;
   final int clientId; // معرف العميل
@@ -53,6 +117,8 @@ class Project {
   final String? finalApprovalNotes; // ملاحظات عدم المصادقة أو استلام الإنجاز
   final DateTime? finalApprovalDate; // تاريخ المصادقة النهائية
   final List<Task> tasks; // هذه القائمة ستحتوي فقط على "المهام الرئيسية" وجذور الشجرة
+  final List<ProjectAttachment> attachments; // قائمة المرفقات الصورية ومستندات PDF
+  final List<ProjectRevision> revisions; // سجل المراجعات التراكمية والتاريخية للحريف
 
   Project({
     required this.id,
@@ -72,12 +138,22 @@ class Project {
     this.finalApprovalNotes,
     this.finalApprovalDate,
     this.tasks = const [],
+    this.attachments = const [],
+    this.revisions = const [],
   });
 
-  // تحويل الـ JSON وبناء شجرة المهام
+  // تحويل الـ JSON وبناء شجرة المهام والمرفقات والمراجعات
   factory Project.fromJson(Map<String, dynamic> json) {
     List<Task> allTasks = json['tasks'] != null 
         ? (json['tasks'] as List).map((i) => Task.fromJson(i)).toList() 
+        : [];
+
+    List<ProjectAttachment> allAttachments = json['attachments'] != null
+        ? (json['attachments'] as List).map((i) => ProjectAttachment.fromJson(i)).toList()
+        : [];
+
+    List<ProjectRevision> allRevisions = json['revisions'] != null
+        ? (json['revisions'] as List).map((i) => ProjectRevision.fromJson(i)).toList()
         : [];
         
     // خوارزمية بناء الشجرة (Tree Building)
@@ -121,6 +197,8 @@ class Project {
       finalApprovalNotes: json['final_approval_notes'],
       finalApprovalDate: json['final_approval_date'] != null ? DateTime.parse(json['final_approval_date']) : null,
       tasks: rootTasks,
+      attachments: allAttachments,
+      revisions: allRevisions,
     );
   }
   

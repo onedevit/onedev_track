@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 // ignore: avoid_web_libraries_in_flutter, deprecated_member_use
 import 'dart:html' as html;
@@ -607,6 +609,8 @@ class _ClientDashboardState extends State<ClientDashboard> {
                 ],
               ),
             ],
+            // عرض سجل المراجعات التراكمي في حالة الموافقة النهائية لمتابعة الأرشيف والمشطبات
+            _buildRevisionsHistoryWidget(project, isDark),
             const SizedBox(height: 16),
             ElevatedButton.icon(
               onPressed: () => AppLocalizations.printHandoverCertificate(project),
@@ -660,19 +664,8 @@ class _ClientDashboardState extends State<ClientDashboard> {
                 ],
               ),
             ],
-            if (project.finalApprovalNotes != null && project.finalApprovalNotes!.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: isDark ? Colors.black26 : Colors.white,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: isDark ? Colors.grey.shade800 : Colors.grey.shade200),
-                ),
-                child: Text('${project.finalApprovalNotes}', style: TextStyle(color: isDark ? const Color(0xFFFCA5A5) : const Color(0xFF991B1B), fontSize: 13)),
-              )
-            ]
+            // عرض سجل المراجعات التراكمي والمرفقات في حالة الرفض
+            _buildRevisionsHistoryWidget(project, isDark),
           ],
         ),
       );
@@ -704,7 +697,8 @@ class _ClientDashboardState extends State<ClientDashboard> {
                 ),
               ],
             ),
-            const SizedBox(height: 20),
+            // عرض سجل المراجعات السابقة التي تم حلها وتطويرها من الإدارة
+            _buildRevisionsHistoryWidget(project, isDark),
             isMobile
                 ? Column(
                     children: [
@@ -785,32 +779,533 @@ class _ClientDashboardState extends State<ClientDashboard> {
     }
   }
 
+  // عرض سجل المراجعات التراكمية التاريخية للعميل
+  Widget _buildRevisionsHistoryWidget(Project project, bool isDark) {
+    if (project.revisions.isEmpty && project.attachments.isEmpty && (project.finalApprovalNotes == null || project.finalApprovalNotes!.isEmpty)) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (project.revisions.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: project.revisions.map((rev) {
+              final bool isResolved = rev.status == 'resolved';
+              final String revDate = DateFormat('yyyy-MM-dd HH:mm').format(rev.createdAt);
+
+              return Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(bottom: 6),
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: isResolved 
+                      ? (isDark ? Colors.green.withValues(alpha: 0.1) : Colors.green.shade50)
+                      : (isDark ? Colors.red.withValues(alpha: 0.1) : Colors.red.shade50),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: isResolved 
+                        ? (isDark ? Colors.green.shade800 : Colors.green.shade200)
+                        : (isDark ? Colors.red.shade800 : Colors.red.shade200),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          isResolved ? Icons.check_circle_rounded : Icons.pending_actions_rounded,
+                          size: 14,
+                          color: isResolved ? Colors.green : Colors.red,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'ملاحظات مراجعة #${rev.revisionNumber} - ${isResolved ? "تمت معالجتها وتطويرها من الإدارة ✓" : "بانتظار معالجة الإدارة ⚠️"}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: isResolved ? Colors.green : Colors.red,
+                          ),
+                        ),
+                        const Spacer(),
+                        Text(revDate, style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      rev.clientNotes,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isResolved 
+                            ? Colors.grey 
+                            : (isDark ? const Color(0xFFFCA5A5) : const Color(0xFF991B1B)),
+                        decoration: isResolved ? TextDecoration.lineThrough : null,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        ] else if (project.finalApprovalNotes != null && project.finalApprovalNotes!.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: isDark ? Colors.black26 : Colors.white,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: isDark ? Colors.grey.shade800 : Colors.grey.shade200),
+            ),
+            child: Text('${project.finalApprovalNotes}', style: TextStyle(color: isDark ? const Color(0xFFFCA5A5) : const Color(0xFF991B1B), fontSize: 13)),
+          ),
+        ],
+
+        if (project.attachments.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          const Text('المرفقات والصور المرفقة مع الطلب:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFFEF4444))),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (var att in project.attachments) ...[
+                Builder(
+                  builder: (context) {
+                    final bool isPdf = att.fileType.toLowerCase() == 'pdf';
+                    final String fullUrl = 'https://onedev.ovh/track/${att.filePath}';
+
+                    return InkWell(
+                      onTap: () {
+                        if (kIsWeb) html.window.open(fullUrl, '_blank');
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.black38 : Colors.white,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.3)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(isPdf ? Icons.picture_as_pdf_rounded : Icons.image_rounded, size: 16, color: isPdf ? Colors.red : Colors.blue),
+                            const SizedBox(width: 6),
+                            Text(att.fileName, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                            const SizedBox(width: 6),
+                            const Icon(Icons.open_in_new_rounded, size: 14, color: Colors.grey),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+
   void _showFinalRejectDialog(Project project) {
     final notesCtrl = TextEditingController();
+    List<ProjectAttachment> localAttachments = List.from(project.attachments);
+    bool isUploading = false;
+    double uploadProgress = 0.0; // النسبة المئوية من 0.0 لـ 1.0
+
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(AppLocalizations.tr('reject_final_approval')),
-        content: TextField(
-          controller: notesCtrl,
-          decoration: InputDecoration(
-            labelText: AppLocalizations.tr('final_rejection_reason_label'),
-            border: const OutlineInputBorder(),
-          ),
-          maxLines: 4,
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppLocalizations.tr('cancel'))),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFEF4444), foregroundColor: Colors.white),
-            onPressed: () {
-              if (notesCtrl.text.trim().isEmpty) return;
-              Navigator.pop(ctx);
-              _submitFinalApproval(project, 'rejected', notes: notesCtrl.text.trim());
-            },
-            child: Text(AppLocalizations.tr('confirm_rejection')),
-          )
-        ],
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          final isDark = Theme.of(context).brightness == Brightness.dark;
+          final double dialogWidth = MediaQuery.of(context).size.width < 650 
+              ? MediaQuery.of(context).size.width 
+              : 560;
+
+          void pickAndUploadFile() async {
+            if (localAttachments.length >= 5) {
+              ScaffoldMessenger.of(ctx).showSnackBar(
+                const SnackBar(content: Text('الحد الأقصى للمرفقات هو 5 ملفات فقط')),
+              );
+              return;
+            }
+
+            if (kIsWeb) {
+              final uploadInput = html.FileUploadInputElement();
+              uploadInput.accept = 'image/*,application/pdf';
+              uploadInput.click();
+
+              uploadInput.onChange.listen((e) async {
+                final files = uploadInput.files;
+                if (files != null && files.isNotEmpty) {
+                  final file = files[0];
+                  final int fileSize = file.size;
+                  final String fileName = file.name;
+
+                  // التحقق من الحد الأقصى للحجم (30 ميجابايت)
+                  if (fileSize > 30 * 1024 * 1024) {
+                    ScaffoldMessenger.of(ctx).showSnackBar(
+                      const SnackBar(content: Text('حجم الملف يتجاوز الحد الأقصى 30 ميجابايت')),
+                    );
+                    return;
+                  }
+
+                  setDialogState(() {
+                    isUploading = true;
+                    uploadProgress = 0.02;
+                  });
+
+                  try {
+                    final formData = html.FormData();
+                    formData.append('project_id', project.id.toString());
+                    formData.appendBlob('file', file, fileName);
+
+                    final request = html.HttpRequest();
+                    request.open('POST', '${ApiService.baseUrl}/client/upload_attachment.php');
+
+                    final prefs = await SharedPreferences.getInstance();
+                    final token = prefs.getString('token');
+                    if (token != null) {
+                      request.setRequestHeader('Authorization', 'Bearer $token');
+                    }
+
+                    // تتبع نسبة الرفع المباشرة واللحظية %0 -> %100 من المتصفح
+                    request.upload.onProgress.listen((html.ProgressEvent pe) {
+                      if (pe.lengthComputable && pe.total != null && pe.total! > 0) {
+                        final double progress = pe.loaded! / pe.total!;
+                        setDialogState(() {
+                          uploadProgress = progress;
+                        });
+                      }
+                    });
+
+                    request.onLoadEnd.listen((pe) {
+                      if (request.status == 200) {
+                        try {
+                          final res = jsonDecode(request.responseText ?? '{}');
+                          if (res['attachment'] != null) {
+                            final newAtt = ProjectAttachment.fromJson(res['attachment']);
+                            setDialogState(() {
+                              localAttachments.add(newAtt);
+                              isUploading = false;
+                              uploadProgress = 0.0;
+                            });
+                          } else {
+                            setDialogState(() {
+                              isUploading = false;
+                              uploadProgress = 0.0;
+                            });
+                          }
+                        } catch (_) {
+                          setDialogState(() {
+                            isUploading = false;
+                            uploadProgress = 0.0;
+                          });
+                        }
+                      } else {
+                        setDialogState(() {
+                          isUploading = false;
+                          uploadProgress = 0.0;
+                        });
+                        if (!ctx.mounted) return;
+                        ScaffoldMessenger.of(ctx).showSnackBar(
+                          const SnackBar(content: Text('تعذر رفع الملف، يرجى التأكد من الاتصال')),
+                        );
+                      }
+                    });
+
+                    request.send(formData);
+                  } catch (err) {
+                    setDialogState(() {
+                      isUploading = false;
+                      uploadProgress = 0.0;
+                    });
+                    if (!ctx.mounted) return;
+                    ScaffoldMessenger.of(ctx).showSnackBar(
+                      SnackBar(content: Text('حدث خطأ أثناء رفع المرفق: $err')),
+                    );
+                  }
+                }
+              });
+            }
+          }
+
+          void deleteFile(ProjectAttachment att) async {
+            try {
+              await ApiService().deleteAttachment(att.id);
+              setDialogState(() {
+                localAttachments.removeWhere((a) => a.id == att.id);
+              });
+            } catch (err) {
+              if (!ctx.mounted) return;
+              ScaffoldMessenger.of(ctx).showSnackBar(
+                const SnackBar(content: Text('تعذر حذف المرفق')),
+              );
+            }
+          }
+
+          return Dialog(
+            backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            elevation: 20,
+            child: Container(
+              width: dialogWidth,
+              padding: const EdgeInsets.all(28),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // الهيدر الفخم مع زر الإغلاق
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.red.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: const Icon(Icons.assignment_return_rounded, color: Color(0xFFEF4444), size: 26),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                AppLocalizations.tr('reject_final_approval'),
+                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isDark ? Colors.white : const Color(0xFF0F172A)),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'يرجى كتابة الملاحظات وإرفاق الدلائل المطلوبة',
+                                style: TextStyle(fontSize: 12, color: isDark ? Colors.grey.shade400 : Colors.grey.shade600),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close_rounded),
+                          onPressed: () => Navigator.pop(ctx),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 16),
+                    Divider(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+                    const SizedBox(height: 16),
+
+                    // حقل إدخال الملاحظات التفصيلية
+                    TextField(
+                      controller: notesCtrl,
+                      style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontSize: 14),
+                      decoration: InputDecoration(
+                        labelText: AppLocalizations.tr('final_rejection_reason_label'),
+                        hintText: 'اكتب ملاحظاتك وأسباب عدم المصادقة النهائية بدقة...',
+                        hintStyle: TextStyle(color: isDark ? Colors.grey.shade600 : Colors.grey.shade400, fontSize: 12),
+                        alignLabelWithHint: true,
+                        filled: true,
+                        fillColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0))),
+                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0))),
+                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Color(0xFFEF4444), width: 2)),
+                      ),
+                      maxLines: 4,
+                    ),
+                    const SizedBox(height: 20),
+
+                    // قسم المرفقات والحجم
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.attach_file_rounded, size: 18, color: Colors.blue),
+                            const SizedBox(width: 6),
+                            Text(
+                              'المرفقات والصور / PDF:',
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: isDark ? Colors.white : const Color(0xFF0F172A)),
+                            ),
+                          ],
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            '${localAttachments.length} / 5 ملفات',
+                            style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue, fontSize: 11),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+
+                    // قائمة الملفات المرفوعة المكتملة
+                    if (localAttachments.isNotEmpty) ...[
+                      Column(
+                        children: localAttachments.map((att) {
+                          final bool isPdf = att.fileType.toLowerCase() == 'pdf';
+                          final double sizeMb = att.fileSize / (1024 * 1024);
+
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: (isPdf ? Colors.red : Colors.blue).withValues(alpha: 0.12),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Icon(isPdf ? Icons.picture_as_pdf_rounded : Icons.image_rounded, size: 18, color: isPdf ? Colors.red : Colors.blue),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        att.fileName,
+                                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: isDark ? Colors.white : const Color(0xFF0F172A)),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        '${sizeMb.toStringAsFixed(2)} MB • ${att.fileType.toUpperCase()}',
+                                        style: const TextStyle(fontSize: 11, color: Colors.grey),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.delete_outline_rounded, size: 20, color: Colors.redAccent),
+                                  tooltip: 'حذف المرفق',
+                                  onPressed: () => deleteFile(att),
+                                ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 10),
+                    ],
+
+                    // شريط الرفع المباشر الذكي الموضح للنسبة المئوية %0 -> %100
+                    if (isUploading) ...[
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Row(
+                                  children: [
+                                    SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+                                    SizedBox(width: 10),
+                                    Text('جاري رفع وتأمين المرفق على السيرفر...', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blue)),
+                                  ],
+                                ),
+                                Text(
+                                  '${(uploadProgress * 100).toInt()}%',
+                                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.blue),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(6),
+                              child: LinearProgressIndicator(
+                                value: uploadProgress > 0 ? uploadProgress : null,
+                                backgroundColor: Colors.blue.withValues(alpha: 0.2),
+                                valueColor: const AlwaysStoppedAnimation<Color>(Colors.blue),
+                                minHeight: 8,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                    ],
+
+                    // زر رفع ملف جديد
+                    if (localAttachments.length < 5 && !isUploading)
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: pickAndUploadFile,
+                          icon: const Icon(Icons.add_a_photo_outlined, size: 18),
+                          label: const Text('+ إرفاق صورة أو مستند PDF (أقل من 30MB)'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.blue,
+                            side: const BorderSide(color: Colors.blue),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        ),
+                      ),
+
+                    const SizedBox(height: 24),
+                    Divider(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+                    const SizedBox(height: 16),
+
+                    // أزرار التحكم والإرسال
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          child: Text(AppLocalizations.tr('cancel')),
+                        ),
+                        const SizedBox(width: 12),
+                        ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFEF4444),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          onPressed: () {
+                            if (notesCtrl.text.trim().isEmpty && localAttachments.isEmpty) {
+                              ScaffoldMessenger.of(ctx).showSnackBar(
+                                const SnackBar(content: Text('الرجاء كتابة الملاحظات أو إرفاق ملف')),
+                              );
+                              return;
+                            }
+                            Navigator.pop(ctx);
+                            _submitFinalApproval(project, 'rejected', notes: notesCtrl.text.trim());
+                          },
+                          icon: const Icon(Icons.send_rounded, size: 18),
+                          label: Text(AppLocalizations.tr('confirm_rejection')),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }

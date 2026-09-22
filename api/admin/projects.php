@@ -16,7 +16,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
               ORDER BY p.created_at DESC";
     $stmt = $db->prepare($query);
     $stmt->execute();
-    echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
+    $projects = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    foreach ($projects as &$project) {
+        $att_query = "SELECT * FROM project_attachments WHERE project_id = :project_id ORDER BY created_at ASC";
+        $att_stmt = $db->prepare($att_query);
+        $att_stmt->bindParam(':project_id', $project['id']);
+        $att_stmt->execute();
+        $project['attachments'] = $att_stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $rev_query = "SELECT * FROM project_revisions WHERE project_id = :project_id ORDER BY revision_number ASC";
+        $rev_stmt = $db->prepare($rev_query);
+        $rev_stmt->bindParam(':project_id', $project['id']);
+        $rev_stmt->execute();
+        $project['revisions'] = $rev_stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    echo json_encode($projects);
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $data = json_decode(file_get_contents("php://input"));
     if(!empty($data->title) && !empty($data->client_id) && !empty($data->start_date) && !empty($data->duration_days) && !empty($data->deadline)) {
