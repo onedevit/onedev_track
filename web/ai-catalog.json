@@ -3,5 +3,21 @@
   "name": "ONEDEV Track",
   "description": "ONEDEV Project Tracking & Handover Portal",
   "version": "1.0.0",
-  "url": "https://onedev.ovh/track/"
+  "url": "https://onedev.ovh/track/",
+  "provider": {
+    "name": "OneDev IT",
+    "url": "https://onedev.ovh"
+  },
+  "resources": [
+    {
+      "name": "ONEDEV Track Portal",
+      "type": "web",
+      "url": "https://onedev.ovh/track/"
+    },
+    {
+      "name": "ONEDEV Track REST API",
+      "type": "api",
+      "url": "https://onedev.ovh/track/api/"
+    }
+  ]
 }
