@@ -2108,6 +2108,8 @@ class _ClientDashboardState extends State<ClientDashboard> {
 
   // 3. بطاقات الإحصائيات الذكية
   Widget _buildStatsSection(Project project, bool isDark, bool isMobile, bool isTablet) {
+    final bool isCompleted = project.progress >= 0.99 || project.finalApprovalStatus == 'approved';
+
     final cards = [
       _buildStatCard(
         title: AppLocalizations.tr('progress_rate'), 
@@ -2118,11 +2120,11 @@ class _ClientDashboardState extends State<ClientDashboard> {
       ),
       _buildStatCard(
         title: AppLocalizations.tr('days_left'), 
-        value: '${project.daysLeft}', 
-        icon: Icons.timer_rounded, 
-        color: const Color(0xFFF59E0B), 
+        value: isCompleted ? '0' : '${project.daysLeft}', 
+        icon: isCompleted ? Icons.check_circle_rounded : Icons.timer_rounded, 
+        color: isCompleted ? const Color(0xFF10B981) : const Color(0xFFF59E0B), 
         isDark: isDark,
-        subtitle: AppLocalizations.tr('work_days_pack')
+        subtitle: isCompleted ? 'مكتمل بنجاح ✓' : AppLocalizations.tr('work_days_pack')
       ),
       _buildStatCard(
         title: AppLocalizations.tr('deadline'), 

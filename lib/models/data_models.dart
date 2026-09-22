@@ -209,7 +209,13 @@ class Project {
   }
   
   double get progress => totalTasks == 0 ? 0 : (completedTasks / totalTasks);
-  int get daysLeft => deadline.difference(DateTime.now()).inDays;
+  int get daysLeft {
+    if (progress >= 0.99 || finalApprovalStatus == 'approved') {
+      return 0;
+    }
+    final int diff = deadline.difference(DateTime.now()).inDays;
+    return diff > 0 ? diff : 0;
+  }
 }
 
 class Task {
