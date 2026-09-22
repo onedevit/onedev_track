@@ -234,6 +234,9 @@ class _ClientDashboardState extends State<ClientDashboard> {
               
               // 5. تفاصيل ومعاينة المشروع الناتيف (Native Flutter Rendering)
               _buildProjectPreviewSection(project, isDark, isMobile),
+
+              // 6. فوتر التطبيق الاحترافي
+              buildAppFooter(isDark),
             ],
           ),
         ),

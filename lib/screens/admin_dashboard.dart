@@ -213,6 +213,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
                         return _buildProjectCard(_filteredProjects[i], isDark, isMobile);
                       },
                     ),
+
+              // 4. فوتر التطبيق الاحترافي
+              buildAppFooter(isDark),
             ],
           ),
         ),

@@ -1,4 +1,4 @@
-# 🚀 OneDev Track — Portail de Suivi de Projets Freelance & Clients (v1.0.1+2)
+# 🚀 OneDev Track — Portail de Suivi de Projets Freelance & Clients
 
 [![Flutter](https://img.shields.io/badge/Flutter-Web_3.x-02569B?logo=flutter&logoColor=white)](https://flutter.dev)
 [![PHP](https://img.shields.io/badge/PHP-8.x_PDO-777BB4?logo=php&logoColor=white)](https://php.net)

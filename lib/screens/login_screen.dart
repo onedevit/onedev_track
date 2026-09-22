@@ -166,7 +166,10 @@ class _LoginScreenState extends State<LoginScreen> {
                               ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                               : Text(AppLocalizations.tr('login'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                         ),
-                      )
+                      ),
+
+                      // فوتر التطبيق الاحترافي
+                      buildAppFooter(isDark),
                     ],
                   ),
                 ),

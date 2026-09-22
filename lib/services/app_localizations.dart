@@ -1114,3 +1114,55 @@ Widget buildLanguageSelector(bool isDark) {
     },
   );
 }
+
+const String kAppName = 'OneDev Track';
+const String kAppVersion = 'v1.0.3';
+const String kAppCopyright = '© 2026 OneDev IT. All rights reserved.';
+
+// فوتر التطبيق الاحترافي المعاد استخدامه بجميع الشاشات
+Widget buildAppFooter(bool isDark) {
+  return Padding(
+    padding: const EdgeInsets.only(top: 30, bottom: 20),
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1E293B) : Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: isDark ? const Color(0xFF334155) : Colors.grey.shade300),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.rocket_launch_rounded, size: 14, color: Colors.blue),
+                  const SizedBox(width: 6),
+                  Text(
+                    '$kAppName $kAppVersion',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.grey.shade300 : Colors.grey.shade700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Text(
+          kAppCopyright,
+          style: TextStyle(
+            fontSize: 10,
+            color: isDark ? Colors.grey.shade600 : Colors.grey.shade500,
+          ),
+        ),
+      ],
+    ),
+  );
+}
