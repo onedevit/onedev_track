@@ -1,0 +1,13 @@
+# ONEDEV Track & ERP Portal
+
+> Professional Project Progress Tracking, Deliverables Handover, and Client Collaboration Platform.
+
+## Core Capabilities
+- Project Timeline & Progress Tracking
+- Revision Notes and Final Handover Certificates
+- Interactive Client & Admin Control Panels
+- Secure Automated Attachment Management
+
+## Specifications
+- Version: 1.0.0
+- Base URL: https://onedev.ovh/track/

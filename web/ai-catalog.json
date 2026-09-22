@@ -1,0 +1,7 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "name": "ONEDEV Track",
+  "description": "ONEDEV Project Tracking & Handover Portal",
+  "version": "1.0.0",
+  "url": "https://onedev.ovh/track/"
+}

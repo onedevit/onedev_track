@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /track/api/
+
+Sitemap: https://onedev.ovh/sitemap.xml

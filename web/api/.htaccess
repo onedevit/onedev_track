@@ -1,0 +1,36 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{REQUEST_METHOD} OPTIONS
+    RewriteRule ^(.*)$ $1 [R=200,L]
+</IfModule>
+
+<IfModule mod_headers.c>
+    Header always set Access-Control-Allow-Origin "*"
+    Header always set Access-Control-Allow-Headers "Origin, X-Requested-With, Content-Type, Accept, Authorization"
+    Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+
+    # ترويسات الأمان الخاصة بالـ API
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "DENY"
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+</IfModule>
+
+# رفع الحد الأقصى لحجم رفع المرفقات في الـ PHP ليتسع لـ 35 ميجابايت
+<IfModule mod_php7.c>
+    php_value upload_max_filesize 35M
+    php_value post_max_size 35M
+    php_value memory_limit 128M
+</IfModule>
+<IfModule mod_php.c>
+    php_value upload_max_filesize 35M
+    php_value post_max_size 35M
+    php_value memory_limit 128M
+</IfModule>
+
+# تفعيل ضغط GZIP لجميع استجابات الـ API
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE application/json
+    AddOutputFilterByType DEFLATE text/plain
+    AddOutputFilterByType DEFLATE text/html
+</IfModule>
